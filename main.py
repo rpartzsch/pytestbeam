@@ -12,7 +12,7 @@ mpl.rcParams['xtick.minor.visible'] = True
 mpl.rcParams['ytick.right'] = True
 mpl.rcParams['ytick.direction'] = 'in'
 mpl.rcParams['ytick.minor.visible'] = True
-mpl.rcParams['font.size'] = 16
+mpl.rcParams['font.size'] = 12
 mpl.rcParams['font.family']= 'DejaVu Serif'
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['errorbar.capsize'] = 3
@@ -30,53 +30,55 @@ blue = cm.naviaS.resampled(6)(1) # blue
 yellowish = cm.naviaS.resampled(8)(3)
 
 
-class simulate(object):
-    def __init__(self) -> None:
-        self.part_desc = np.dtype([
-            ('energy', float),
-            ('x_angle', float),
-            ('y_angle', float),
-            ('x', float),
-            ('y', float),
-            ('z', float)])
+def plot_events(devices, hit_tables, event):
 
-    def simulate_hits(self, devices, beam):
-        numb_events = beam['nmb_particles']
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111, projection='3d')
 
-        numb_devices = len(devices)
-        duts = [device(devices[i]) for i in range(numb_devices)]
-        hit_tables = [(dut.create_raw_hits(numb_events)) for dut in duts]
-        part = sim_particle(beam)
-        part_desc = self.part_desc
+    i = 0
+    x_line = []
+    y_line = []
+    z_line = []
+    for dut in devices:
+        # Define the dimensions of the plane
+        x_min, x_max = -dut['column']*dut['column_pitch']/2 + dut['delta_x'], dut['column']*dut['column_pitch']/2 + dut['delta_x']
+        y_min, y_max = -dut['row']*dut['row_pitch']/2 + dut['delta_y'], dut['row']*dut['row_pitch']/2 + dut['delta_y']
+        z = dut['z_position']  # constant z-value for the plane
 
-        hit_tables = self.create_tracks(numb_events, numb_devices, devices, duts, hit_tables, part, part_desc)
+        # Generate x and y values
+        x = np.linspace(x_min, x_max, 100)
+        y = np.linspace(y_min, y_max, 100)
+        x, y = np.meshgrid(x, y)
 
-        hit_tables = [(duts[i].delete_outs(hit_tables[i])) for i in range(numb_devices)]
-        return hit_tables
-    
-    def create_tracks(numb_events, numb_devices, devices, duts, hit_tables, part, part_desc):
-        for event in range(numb_events):
-            part.propagate(devices)
-            track = part.output_path()
-            hit_dut = [np.array(tuple([hit[j] for hit in track]), dtype=part_desc) for j in range(numb_devices)]
-            for i in range(numb_devices):
-                hit_tables[i]['event_number'][event] = event + 1
-                hit_tables[i]['column'][event] = duts[i].calc_column_position(hit_dut[i]['x']) + 1
-                hit_tables[i]['row'][event] = duts[i].calc_row_position(hit_dut[i]['y']) + 1
-        return hit_tables
+        # Create a flat plane
+        flat_plane = np.full_like(x, z)
 
-    @staticmethod
-    @njit
-    def create_tracks_fast(numb_events, numb_devices, devices, duts, hit_tables, part, part_desc):
-        for event in range(numb_events):
-            part.propagate(devices)
-            track = part.output_path()
-            hit_dut = [np.array(tuple([hit[j] for hit in track]), dtype=part_desc) for j in range(numb_devices)]
-            for i in range(numb_devices):
-                hit_tables[i]['event_number'][event] = event + 1
-                hit_tables[i]['column'][event] = duts[i].calc_column_position(hit_dut[i]['x']) + 1
-                hit_tables[i]['row'][event] = duts[i].calc_row_position(hit_dut[i]['y']) + 1
-        return hit_tables
+        # Plot the flat plane
+        ax.plot_surface(x, flat_plane , y, color = cm.naviaS.resampled(len(devices))(i), alpha=0.5, label='Dut %s' %i)
+        i += 1
+
+    for eve in event:
+        x_line = []
+        y_line = []
+        z_line = []
+        i = 0
+        for dut in devices:
+            i += 1
+            x_line.append(hit_tables[3][i::len(devices)][eve])
+            y_line.append(hit_tables[4][i::len(devices)][eve])
+            z_line.append(dut['z_position'])
+
+            lines_z = np.full_like(x_line, z_line)
+            ax.plot(x_line, lines_z, y_line, color='red')
+
+    # Set labels and title
+    ax.set_xlabel('x [$\mu$m]')
+    ax.set_ylabel('z [$\mu$m]')
+    ax.set_zlabel('y [$\mu$m]')
+    ax.legend()
+
+    plt.show()
+
 
 def correlate(file_1, file_2, dut_1, dut_2):
     with tb.open_file(file_1, "r") as in_file:
