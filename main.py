@@ -54,8 +54,9 @@ def plot_events(devices, hit_tables, event):
         flat_plane = np.full_like(x, z)
 
         # Plot the flat plane
-        ax.plot_surface(x, flat_plane , y, color = cm.naviaS.resampled(len(devices))(i), alpha=0.5, label='Dut %s' %i)
         i += 1
+        ax.plot_surface(x, flat_plane , y, color = cm.naviaS.resampled(len(devices))(len(devices)-i), alpha=0.5, label='Dut %s' %i)
+        
 
     for eve in event:
         x_line = []
