@@ -1,9 +1,6 @@
 from numba import njit
 import tables as tb
 import numpy as np
-from device import device
-from hit import sim_initial_hits
-from hit import sim_particle
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
@@ -49,27 +46,37 @@ class simulate(object):
         numb_devices = len(devices)
         duts = [device(devices[i]) for i in range(numb_devices)]
         hit_tables = [(dut.create_raw_hits(numb_events)) for dut in duts]
+        part = sim_particle(beam)
+        part_desc = self.part_desc
 
-        for event in range(numb_events):
-            part = sim_particle(beam)
-            part.propagate(devices)
-            track = part.output_path()
-            # hit_dut_1 = np.array(tuple([hit[0] for hit in track]), dtype=self.part_desc)
-            # hit_dut_2 = np.array(tuple([hit[1] for hit in track]), dtype=self.part_desc)
-            hit_dut = [np.array(tuple([hit[j] for hit in track]), dtype=self.part_desc) for j in range(numb_devices)]
-
-            for i in range(numb_devices):
-                hit_tables[i]['event_number'][event] = event + 1
-                hit_tables[i]['column'][event] = duts[i].calc_column_position(hit_dut[i]['x']) + 1
-                hit_tables[i]['row'][event] = duts[i].calc_row_position(hit_dut[i]['y']) + 1
-
-            # hit_table_2['event_number'][event] = event
-            # hit_table_2['column'][event] = duts[1].calc_column_position(hit_dut_2['x'])
-            # hit_table_2['row'][event] = duts[1].calc_column_position(hit_dut_2['y'])
+        hit_tables = self.create_tracks(numb_events, numb_devices, devices, duts, hit_tables, part, part_desc)
 
         hit_tables = [(duts[i].delete_outs(hit_tables[i])) for i in range(numb_devices)]
         return hit_tables
     
+    def create_tracks(numb_events, numb_devices, devices, duts, hit_tables, part, part_desc):
+        for event in range(numb_events):
+            part.propagate(devices)
+            track = part.output_path()
+            hit_dut = [np.array(tuple([hit[j] for hit in track]), dtype=part_desc) for j in range(numb_devices)]
+            for i in range(numb_devices):
+                hit_tables[i]['event_number'][event] = event + 1
+                hit_tables[i]['column'][event] = duts[i].calc_column_position(hit_dut[i]['x']) + 1
+                hit_tables[i]['row'][event] = duts[i].calc_row_position(hit_dut[i]['y']) + 1
+        return hit_tables
+
+    @staticmethod
+    @njit
+    def create_tracks_fast(numb_events, numb_devices, devices, duts, hit_tables, part, part_desc):
+        for event in range(numb_events):
+            part.propagate(devices)
+            track = part.output_path()
+            hit_dut = [np.array(tuple([hit[j] for hit in track]), dtype=part_desc) for j in range(numb_devices)]
+            for i in range(numb_devices):
+                hit_tables[i]['event_number'][event] = event + 1
+                hit_tables[i]['column'][event] = duts[i].calc_column_position(hit_dut[i]['x']) + 1
+                hit_tables[i]['row'][event] = duts[i].calc_row_position(hit_dut[i]['y']) + 1
+        return hit_tables
 
 def correlate(file_1, file_2, dut_1, dut_2):
     with tb.open_file(file_1, "r") as in_file:
