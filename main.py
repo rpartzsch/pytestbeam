@@ -43,34 +43,25 @@ def plot_events(devices, hit_tables, event):
         # Define the dimensions of the plane
         x_min, x_max = -dut['column']*dut['column_pitch']/2 + dut['delta_x'], dut['column']*dut['column_pitch']/2 + dut['delta_x']
         y_min, y_max = -dut['row']*dut['row_pitch']/2 + dut['delta_y'], dut['row']*dut['row_pitch']/2 + dut['delta_y']
-        z = dut['z_position']  # constant z-value for the plane
-
         # Generate x and y values
         x = np.linspace(x_min, x_max, 100)
         y = np.linspace(y_min, y_max, 100)
         x, y = np.meshgrid(x, y)
 
-        # Create a flat plane
-        flat_plane = np.full_like(x, z)
-
-        # Plot the flat plane
         i += 1
-        ax.plot_surface(x, flat_plane , y, color = cm.naviaS.resampled(len(devices))(len(devices)-i), alpha=0.5, label='Dut %s' %i)
+        ax.plot_surface(x, dut['z_position'] , y, color = cm.naviaS.resampled(len(devices))(len(devices)-i), alpha=0.5, label='Dut %s' %i)
         
-
     for eve in event:
         x_line = []
         y_line = []
         z_line = []
         i = 0
         for dut in devices:
-            i += 1
             x_line.append(hit_tables[3][i::len(devices)][eve])
             y_line.append(hit_tables[4][i::len(devices)][eve])
             z_line.append(dut['z_position'])
-
-            lines_z = np.full_like(x_line, z_line)
-            ax.plot(x_line, lines_z, y_line, color='red')
+            ax.plot(x_line, z_line, y_line, color='red')
+            i += 1
 
     # Set labels and title
     ax.set_xlabel('x [$\mu$m]')

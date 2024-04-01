@@ -2,9 +2,8 @@ import numpy as np
 from numba import njit
 from numba.typed import List
 
-def tracks(beam, devices, random_seed=42):
+def tracks(beam, devices):
 
-    np.random.seed(random_seed)
     beam_locx = beam['loc_x']
     beam_sigmax = beam['sigma_x']
     beam_locy = beam['loc_y']
@@ -17,10 +16,6 @@ def tracks(beam, devices, random_seed=42):
 
     energy = List()
     [energy.append(i) for i in [beam['energy']]]
-    anglex = List()
-    [anglex.append(i) for i in [np.random.normal(beam['x_angle'], beam['x_disp'])]]
-    angley = List()
-    [angley.append(i) for i in [np.random.normal(beam['y_angle'], beam['y_disp'])]]
     x = List()
     [x.append(i) for i in [np.random.normal(beam['loc_x'], beam['sigma_x'])]]
     y = List()
@@ -35,36 +30,43 @@ def tracks(beam, devices, random_seed=42):
     [scatter_thickness.append(i) for i in [dut['thickness'] for dut in devices]]
     time_stamp = List()
     [time_stamp.append(i) for i in [np.random.poisson(particle_distance)]]
+    angle_x, angle_y = scatter(scatter_thickness[0], energy[-1], 0, 0)
+    anglex = List()
+    [anglex.append(i) for i in [beam['x_angle'] + angle_x]]
+    angley = List()
+    [angley.append(i) for i in [beam['y_angle'] + angle_y]]
 
     return generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, 
                            z_positions, scatter_thickness, 
                            beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, 
-                        particle_distance, beam_anglex, beam_angley, random_seed=42)
+                        particle_distance, beam_anglex, beam_angley)
 
 @njit
 def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_positions, scatter_thickness, 
                         beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, particle_distance, beam_anglex, beam_angley, 
-                        random_seed=42):
+                        ):
     for events in range(numb_events):
-        np.random.seed(events*random_seed)
         for device in range(device_nmb):
             if z[-1] != z_positions[device]:
                 deltax, deltay = fly(z_positions[device], anglex[-1], angley[-1])
                 x.append(x[-1] + deltax)
                 y.append(y[-1] + deltay)
                 z.append(z_positions[device])
-            angle_x, angle_y = scatter(scatter_thickness[device], energy[-1], anglex[-1], angley[-1])
-            anglex.append(angle_x)
-            angley.append(angle_y)
+                angle_x, angle_y = scatter(scatter_thickness[device], energy[-1], 0, 0)
+                anglex.append(anglex[-1] + angle_x)
+                angley.append(angley[-1] + angle_y)
+                energy.append(energy[-1])
+                time_stamp.append(time_stamp[-1])
+        if events != (numb_events - 1):
+            z.append(0)
             energy.append(energy[-1])
-            time_stamp.append(time_stamp[-1])
-        anglex.append(draw_1dgauss(beam_anglex, beam_dispx))
-        angley.append(draw_1dgauss(beam_angley, beam_dispy))
-        x.append(draw_1dgauss(beam_locx, beam_sigmax))
-        y.append(draw_1dgauss(beam_locy, beam_sigmay))
-        time_stamp.append(np.random.poisson(particle_distance)+time_stamp[-1])
+            anglex.append(draw_1dgauss(beam_anglex, beam_dispx))
+            angley.append(draw_1dgauss(beam_angley, beam_dispy))
+            x.append(draw_1dgauss(beam_locx, beam_sigmax))
+            y.append(draw_1dgauss(beam_locy, beam_sigmay))
+            time_stamp.append(np.random.poisson(particle_distance)+time_stamp[-1])
     return energy, anglex, angley, x, y, z, time_stamp
 
 @njit
@@ -77,9 +79,9 @@ def draw_1dgauss(loc, sig):
 
 @njit
 def highlander_fast_electrons(thickness, rad_length, energy):
-    beta = 1
     z = -1
-    p = energy
+    p = np.sqrt(energy**2 - 0.511**2)
+    beta = 1
     epsilon = thickness/rad_length
     return np.sqrt((13.6/(beta*p)*z)**2*epsilon*(1+0.038*np.log(epsilon))**2)
 
