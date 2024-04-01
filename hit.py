@@ -11,12 +11,16 @@ def tracks(beam, devices, random_seed=42):
     beam_sigmay = beam['sigma_y']
     beam_dispx = beam['x_disp']
     beam_dispy = beam['y_disp']
+    beam_anglex = beam['x_angle']
+    beam_angley = beam['y_angle']
+    particle_distance = 1/beam['particle_rate']*10**9
+
     energy = List()
     [energy.append(i) for i in [beam['energy']]]
     anglex = List()
-    [anglex.append(i) for i in [np.random.normal(0, beam['x_disp'])]]
+    [anglex.append(i) for i in [np.random.normal(beam['x_angle'], beam['x_disp'])]]
     angley = List()
-    [angley.append(i) for i in [np.random.normal(0, beam['y_disp'])]]
+    [angley.append(i) for i in [np.random.normal(beam['y_angle'], beam['y_disp'])]]
     x = List()
     [x.append(i) for i in [np.random.normal(beam['loc_x'], beam['sigma_x'])]]
     y = List()
@@ -29,17 +33,20 @@ def tracks(beam, devices, random_seed=42):
     [z_positions.append(i) for i in [dut['z_position'] for dut in devices]]
     scatter_thickness = List()
     [scatter_thickness.append(i) for i in [dut['thickness'] for dut in devices]]
-
+    time_stamp = List()
+    [time_stamp.append(i) for i in [np.random.poisson(particle_distance)]]
 
     return generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, 
                            z_positions, scatter_thickness, 
                            beam_locx, beam_sigmax, beam_locy,
-                        beam_sigmay, beam_dispx, beam_dispy, random_seed=42)
+                        beam_sigmay, beam_dispx, beam_dispy, time_stamp, 
+                        particle_distance, beam_anglex, beam_angley, random_seed=42)
 
 @njit
 def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_positions, scatter_thickness, 
                         beam_locx, beam_sigmax, beam_locy,
-                        beam_sigmay, beam_dispx, beam_dispy, random_seed=42):
+                        beam_sigmay, beam_dispx, beam_dispy, time_stamp, particle_distance, beam_anglex, beam_angley, 
+                        random_seed=42):
     for events in range(numb_events):
         np.random.seed(events*random_seed)
         for device in range(device_nmb):
@@ -52,11 +59,13 @@ def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_
             anglex.append(angle_x)
             angley.append(angle_y)
             energy.append(energy[-1])
-        anglex.append(draw_1dgauss(0, beam_dispx))
-        angley.append(draw_1dgauss(0, beam_dispy))
+            time_stamp.append(time_stamp[-1])
+        anglex.append(draw_1dgauss(beam_anglex, beam_dispx))
+        angley.append(draw_1dgauss(beam_angley, beam_dispy))
         x.append(draw_1dgauss(beam_locx, beam_sigmax))
         y.append(draw_1dgauss(beam_locy, beam_sigmay))
-    return energy, anglex, angley, x, y, z
+        time_stamp.append(np.random.poisson(particle_distance)+time_stamp[-1])
+    return energy, anglex, angley, x, y, z, time_stamp
 
 @njit
 def draw_2dgauss(locx, locy, sigx, sigy):
