@@ -81,7 +81,7 @@ def draw_1dgauss(loc, sig):
 def highlander_fast_electrons(thickness, rad_length, energy):
     z = -1
     p = np.sqrt(energy**2 - 0.511**2)
-    beta = 1
+    beta = np.sqrt(1-1/(1+(energy/0.511)**2))
     epsilon = thickness/rad_length
     return np.sqrt((13.6/(beta*p)*z)**2*epsilon*(1+0.038*np.log(epsilon))**2)
 
