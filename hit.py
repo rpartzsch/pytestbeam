@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit
 from numba.typed import List
+import pylandau
 
 def tracks(beam, devices):
 
@@ -12,10 +13,9 @@ def tracks(beam, devices):
     beam_dispy = beam['y_disp']
     beam_anglex = beam['x_angle']
     beam_angley = beam['y_angle']
+    beam_energy = beam['energy']
     particle_distance = 1/beam['particle_rate']*10**9
 
-    energy = List()
-    [energy.append(i) for i in [beam['energy']]]
     x = List()
     [x.append(i) for i in [np.random.normal(beam['loc_x'], beam['sigma_x'])]]
     y = List()
@@ -30,23 +30,31 @@ def tracks(beam, devices):
     [scatter_thickness.append(i) for i in [dut['thickness'] for dut in devices]]
     time_stamp = List()
     [time_stamp.append(i) for i in [np.random.poisson(particle_distance)]]
-    angle_x, angle_y = scatter(scatter_thickness[0], energy[-1], 0, 0)
+    angle_x, angle_y = scatter(scatter_thickness[0], beam['energy'], 0, 0)
     anglex = List()
     [anglex.append(i) for i in [beam['x_angle'] + angle_x]]
     angley = List()
     [angley.append(i) for i in [beam['y_angle'] + angle_y]]
 
+    energy_lost = np.zeros((device_nmb, numb_events))
+    for dev in range(device_nmb):
+        energy_lost[dev] = sample_landau_dist_fast(landau, numb_events, 0, 0.5, energy=(beam['energy']-np.mean(energy_lost[dev-1])), z=-1, Z=14, A=24, rho=2.33,
+                                                    d=scatter_thickness[dev]*10**(-4), mode="ntrue")
+        
+    energy = List()
+    [energy.append(i) for i in [beam['energy']-energy_lost[0][0]]]
+
     return generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, 
                            z_positions, scatter_thickness, 
                            beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, 
-                        particle_distance, beam_anglex, beam_angley)
+                        particle_distance, beam_anglex, beam_angley, energy_lost, beam_energy)
 
 @njit
 def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_positions, scatter_thickness, 
                         beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, particle_distance, beam_anglex, beam_angley, 
-                        ):
+                        energy_lost, beam_energy):
     for events in range(numb_events):
         for device in range(device_nmb):
             if z[-1] != z_positions[device]:
@@ -57,11 +65,12 @@ def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_
                 angle_x, angle_y = scatter(scatter_thickness[device], energy[-1], 0, 0)
                 anglex.append(anglex[-1] + angle_x)
                 angley.append(angley[-1] + angle_y)
-                energy.append(energy[-1])
+
+                energy.append(energy[-1] - energy_lost[device][events])
                 time_stamp.append(time_stamp[-1])
         if events != (numb_events - 1):
             z.append(0)
-            energy.append(energy[-1])
+            energy.append(beam_energy-energy_lost[0][events])
             anglex.append(draw_1dgauss(beam_anglex, beam_dispx))
             angley.append(draw_1dgauss(beam_angley, beam_dispy))
             x.append(draw_1dgauss(beam_locx, beam_sigmax))
@@ -97,3 +106,42 @@ def fly(length, x_angle, y_angle):
     deltay = np.tan(y_angle)*length
     return deltax, deltay
 
+def sample_landau_dist_fast(pdf, n, xmin, xmax, energy=30, z=-1, Z=14, A=24, rho=2.33, d=0.02, mode="ntrue",):
+    """generates n values between xmin and xmax from the given distribution pdf using MC accept/reject
+    expands on https://theoryandpractice.org/stats-ds-book/distributions/accept-reject.html"""
+
+    # fi for non normalized distributions
+    x_vals = np.linspace(xmin, xmax, n)
+    pdf_max = np.max(pdf(x_vals, energy, z, Z, A, rho, d))
+    pdf_min = np.min(pdf(x_vals, energy, z, Z, A, rho, d))
+
+    x = np.random.uniform(
+        xmin, xmax, n
+    )  # get uniform temporary x values between xmin and xmax
+    y = np.random.uniform(
+        pdf_min, pdf_max, n
+    )  # get uniform random y values  between pdfmin and pdfmax
+
+    if mode == "ntrue":
+        return np.random.choice(x[y < pdf(x, energy, z, Z, A, rho, d)], size=n)
+
+    elif mode == "pdftrue":
+        new_n = int(n / (x[y < pdf(x)].size / x.size))
+        x = np.random.uniform(xmin, xmax, new_n)
+        y = np.random.uniform(pdf_min, pdf_max, new_n)
+        return x[y < pdf(x)]
+
+    else:
+        return x[y < pdf(x)]
+
+def zeta(z, Z, A, beta, rho, x):
+    return 0.1535*z**2*Z*rho*x/(A*beta**2)
+
+def lamb(zeta, delta, beta):
+    E = 0.000001
+    return 1/zeta*(delta-0.025)-beta**2-np.log(zeta/E)-1+np.e
+
+def landau(delta, energy, z, Z, A, rho, x):
+    beta = np.sqrt(1-1/(1+(energy/0.511)**2))
+    zet = zeta(z, Z, A, beta, rho, x)
+    return pylandau.landau(lamb(zet, delta, beta))/zet
