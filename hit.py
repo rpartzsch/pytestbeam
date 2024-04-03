@@ -16,6 +16,14 @@ def tracks(beam, devices):
     beam_energy = beam['energy']
     particle_distance = 1/beam['particle_rate']*10**9
 
+    x_extend_pos = List()
+    [x_extend_pos.append(dut['column_pitch']*dut['column']/2 + dut['delta_x'])  for dut in devices]
+    x_extend_neg = List()
+    [x_extend_neg.append(-dut['column_pitch']*dut['column']/2 + dut['delta_x'])  for dut in devices]
+    y_extend_pos = List()
+    [y_extend_pos.append(dut['row_pitch']*dut['row']/2 + dut['delta_y'])  for dut in devices]
+    y_extend_neg = List()
+    [y_extend_neg.append(-dut['row_pitch']*dut['row']/2 + dut['delta_y'])  for dut in devices]
     x = List()
     [x.append(i) for i in [np.random.normal(beam['loc_x'], beam['sigma_x'])]]
     y = List()
@@ -48,13 +56,14 @@ def tracks(beam, devices):
                            z_positions, scatter_thickness, 
                            beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, 
-                        particle_distance, beam_anglex, beam_angley, energy_lost, beam_energy)
+                        particle_distance, beam_anglex, beam_angley, energy_lost, beam_energy,
+                        x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg)
 
 @njit
 def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_positions, scatter_thickness, 
                         beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, particle_distance, beam_anglex, beam_angley, 
-                        energy_lost, beam_energy):
+                        energy_lost, beam_energy, x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg):
     for events in range(numb_events):
         for device in range(device_nmb):
             if z[-1] != z_positions[device]:
@@ -63,9 +72,12 @@ def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_
                 y.append(y[-1] + deltay)
                 z.append(z_positions[device])
                 angle_x, angle_y = scatter(scatter_thickness[device], energy[-1], 0, 0)
+                if x[-1] > x_extend_pos[device] or x[-1] < x_extend_neg[device] or y[-1] > y_extend_pos[device] or y[-1] < y_extend_neg[device]:
+                    angle_x = 0
+                    angle_y = 0
+                    energy_lost[device][events] = 0
                 anglex.append(anglex[-1] + angle_x)
                 angley.append(angley[-1] + angle_y)
-
                 energy.append(energy[-1] - energy_lost[device][events])
                 time_stamp.append(time_stamp[-1])
         if events != (numb_events - 1):
