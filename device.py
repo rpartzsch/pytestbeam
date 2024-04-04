@@ -29,23 +29,46 @@ def calculate_device_hit(beam, devices, hit_data, folder):
     [deltax.append(i) for i in [dut['delta_x'] for dut in devices]]
     deltay = List()
     [deltay.append(i) for i in [dut['delta_y'] for dut in devices]]
-    
+    trigger = List()
+    [trigger.append(True) if trig == 'triggered' else trigger.append(False) for trig in [dut['trigger'] for dut in devices]]
+    accepted_event = np.random.uniform(0, 1, numb_events) < 0.6
+
     for dut in range(device_nmb):
+        if trigger[dut] == False:
+            hit_table = create_raw_hits(hits_descr, numb_events)
+        else: 
+            hit_table = create_raw_hits(hits_descr, np.sum(accepted_event))
         table = calc_position(numb_events, device_nmb, device_row[dut], device_columns[dut], device_columns_pitch[dut],
-                           device_row_pitch[dut], deltax[dut], deltay[dut], hit_data, dut, create_raw_hits(hits_descr, numb_events))
+                           device_row_pitch[dut], deltax[dut], deltay[dut], hit_data, dut, hit_table, 
+                           trigger, accepted_event)
         table = delete_outs(device_columns[dut], device_row[dut], table)
         create_hit_file(table, folder, str(dut))
 
 @njit
 def calc_position(numb_events, device_nmb, row, column, 
-                  column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table):
+                  column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event):
 
     x = hit_data[3][dut::device_nmb]
     y = hit_data[4][dut::device_nmb]
-    for event in range(numb_events):
-        hit_table['event_number'][event] = event + 1
-        hit_table['column'][event] = ((x[event] + deltax)/column_pitch + column/2) + 1
-        hit_table['row'][event] = ((y[event] + deltay)/row_pitch + row/2) + 1
+    event = 0
+    for part in range(numb_events):
+        if accepted_event[part] == True:
+            if trigger[dut] == False:
+                hit_table['event_number'][part] = event + 1
+                hit_table['column'][part] = ((x[part] + deltax)/column_pitch + column/2) + 1
+                hit_table['row'][part] = ((y[part] + deltay)/row_pitch + row/2) + 1
+                event += 1
+            else:
+                hit_table['event_number'][event] = event + 1
+                hit_table['column'][event] = ((x[part] + deltax)/column_pitch + column/2) + 1
+                hit_table['row'][event] = ((y[part] + deltay)/row_pitch + row/2) + 1
+                event += 1
+        else:
+            if trigger[dut] == False:
+                hit_table['event_number'][part] = event + 1
+                hit_table['column'][part] = ((x[part] + deltax)/column_pitch + column/2) + 1
+                hit_table['row'][part] = ((y[part] + deltay)/row_pitch + row/2) + 1
+
     return hit_table
 
 
