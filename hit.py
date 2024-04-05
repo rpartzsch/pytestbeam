@@ -3,7 +3,7 @@ from numba import njit
 from numba.typed import List
 import pylandau
 
-def tracks(beam, devices):
+def tracks(beam, devices, materials):
 
     beam_locx = beam['loc_x']
     beam_sigmax = beam['sigma_x']
@@ -15,6 +15,15 @@ def tracks(beam, devices):
     beam_angley = beam['y_angle']
     beam_energy = beam['energy']
     particle_distance = 1/beam['particle_rate']*10**9
+
+    Z = List()
+    [Z.append(material['Z']) for material in materials]
+    A = List()
+    [A.append(material['A']) for material in materials]
+    rho = List()
+    [rho.append(material['rho']) for material in materials]
+    rad_length = List()
+    [rad_length.append(material['rad_length']) for material in materials]
 
     x_extend_pos = List()
     [x_extend_pos.append(dut['column_pitch']*dut['column']/2 + dut['delta_x'])  for dut in devices]
@@ -38,15 +47,16 @@ def tracks(beam, devices):
     [scatter_thickness.append(i) for i in [dut['thickness'] for dut in devices]]
     time_stamp = List()
     [time_stamp.append(i) for i in [np.random.poisson(particle_distance)]]
-    angle_x, angle_y = scatter(scatter_thickness[0], beam['energy'], 0, 0)
+    angle_x, angle_y = scatter(scatter_thickness[0], beam['energy'], 0, 0, rad_length[0])
     anglex = List()
     [anglex.append(i) for i in [beam['x_angle'] + angle_x]]
     angley = List()
     [angley.append(i) for i in [beam['y_angle'] + angle_y]]
 
+
     energy_lost = np.zeros((device_nmb, numb_events))
     for dev in range(device_nmb):
-        energy_lost[dev] = sample_landau_dist_fast(landau, numb_events, 0, 0.5, energy=(beam['energy']-np.mean(energy_lost[dev-1])), z=-1, Z=14, A=24, rho=2.33,
+        energy_lost[dev] = sample_landau_dist_fast(landau, numb_events, 0, 0.5, energy=(beam['energy']-np.mean(energy_lost[dev-1])), z=-1, Z=Z[dev], A=A[dev], rho=rho[dev],
                                                     d=scatter_thickness[dev]*10**(-4), mode="ntrue")
         
     energy = List()
@@ -57,13 +67,13 @@ def tracks(beam, devices):
                            beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, 
                         particle_distance, beam_anglex, beam_angley, energy_lost, beam_energy,
-                        x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg)
+                        x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg, rad_length)
 
 @njit
 def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_positions, scatter_thickness, 
                         beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, particle_distance, beam_anglex, beam_angley, 
-                        energy_lost, beam_energy, x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg):
+                        energy_lost, beam_energy, x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg, rad_length):
     for events in range(numb_events):
         for device in range(device_nmb):
             if z[-1] != z_positions[device]:
@@ -71,7 +81,7 @@ def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_
                 x.append(x[-1] + deltax)
                 y.append(y[-1] + deltay)
                 z.append(z_positions[device])
-                angle_x, angle_y = scatter(scatter_thickness[device], energy[-1], 0, 0)
+                angle_x, angle_y = scatter(scatter_thickness[device], energy[-1], 0, 0, rad_length[device])
                 if x[-1] > x_extend_pos[device] or x[-1] < x_extend_neg[device] or y[-1] > y_extend_pos[device] or y[-1] < y_extend_neg[device]:
                     angle_x = 0
                     angle_y = 0
@@ -107,9 +117,8 @@ def highlander_fast_electrons(thickness, rad_length, energy):
     return np.sqrt((13.6/(beta*p)*z)**2*epsilon*(1+0.038*np.log(epsilon))**2)
 
 @njit
-def scatter(thickness, energy, x_angle, y_angle):
-    silic = 93650
-    var_angle = highlander_fast_electrons(thickness, silic, energy)
+def scatter(thickness, energy, x_angle, y_angle, rad_length):
+    var_angle = highlander_fast_electrons(thickness, rad_length, energy)
     return draw_2dgauss(x_angle, y_angle, var_angle, var_angle)
 
 @njit
