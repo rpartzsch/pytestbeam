@@ -1,6 +1,6 @@
 
 deviceses:
-  mimosa_26_p1:
+  mimosa26_p1:
       column: 1152
       row: 576
       column_pitch: 18.4
@@ -12,25 +12,49 @@ deviceses:
       trigger: untriggered
       material: silicon
 
-  mimosa_26_p2: 
+  mimosa26_p2: 
       column: 1152
       row: 576
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 5000
+      z_position: 4600
       delta_x: 0
       delta_y: 0
       trigger: untriggered
       material: silicon
 
-  mimosa_26_3:
+  mimosa26_p3:
       column: 1152
       row: 576
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 15000
+      z_position: 9170
+      delta_x: 0
+      delta_y: 0
+      trigger: untriggered
+      material: silicon
+
+  mimosa26_p4:
+      column: 1152
+      row: 576
+      column_pitch: 18.4
+      row_pitch: 18.4
+      thickness: 50
+      z_position: 16585
+      delta_x: 100
+      delta_y: 0
+      trigger: untriggered
+      material: silicon
+
+  mimosa26_p6:
+      column: 1152
+      row: 576
+      column_pitch: 18.4
+      row_pitch: 18.4
+      thickness: 50
+      z_position: 18715
       delta_x: 0
       delta_y: 0
       trigger: untriggered
@@ -42,14 +66,14 @@ deviceses:
       column_pitch: 50
       row_pitch: 50
       thickness: 300
-      z_position: 35000
+      z_position: 22470
       delta_x: 0
       delta_y: 0
       trigger: triggered
       material: silicon
 
 beam:
-    energy: 4000
+    energy: 10000
     sigma_x: 2000
     sigma_y: 200
     loc_x: 0
@@ -58,7 +82,7 @@ beam:
     y_disp: 0.005
     x_angle: 0
     y_angle: 0
-    nmb_particles: 100000
+    nmb_particles: 1000000
     particle_rate: 5000
 
-data_output: '/home/rasmus/Documents/pieces of interest/output_pytestbeam/'
+data_output: 'output_data/'

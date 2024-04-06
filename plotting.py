@@ -30,7 +30,7 @@ blue = cm.naviaS.resampled(6)(1) # blue
 yellowish = cm.naviaS.resampled(8)(3)
 
 
-def plot_events(devices, hit_tables, event):
+def plot_events(devices, names, hit_tables, event, savefig=False):
 
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111, projection='3d')
@@ -48,8 +48,8 @@ def plot_events(devices, hit_tables, event):
         y = np.linspace(y_min, y_max, 100)
         x, y = np.meshgrid(x, y)
 
+        ax.plot_surface(x, dut['z_position'] , y, color = cm.naviaS.resampled(len(devices))(len(devices)-i), alpha=0.5, label='%s' %names[i])
         i += 1
-        ax.plot_surface(x, dut['z_position'] , y, color = cm.naviaS.resampled(len(devices))(len(devices)-i), alpha=0.5, label='Dut %s' %i)
         
     for eve in event:
         x_line = []
@@ -69,7 +69,10 @@ def plot_events(devices, hit_tables, event):
     ax.set_zlabel('y [$\mu$m]')
     ax.legend()
 
-    plt.show()
+    if savefig:
+        plt.savefig('output_data/example_events.pdf')
+    else:
+        plt.show()
 
 
 def correlate(file_1, file_2, dut_1, dut_2):

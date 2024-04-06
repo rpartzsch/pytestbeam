@@ -4,7 +4,7 @@ import tables as tb
 import numpy as np
 from numba.typed import List
 
-def calculate_device_hit(beam, devices, hit_data, folder):
+def calculate_device_hit(beam, devices, hit_data, names, folder):
 
     hits_descr = np.dtype([
         ('event_number', '<i8'),
@@ -36,13 +36,16 @@ def calculate_device_hit(beam, devices, hit_data, folder):
     for dut in range(device_nmb):
         if trigger[dut] == False:
             hit_table = create_raw_hits(hits_descr, numb_events)
-        else: 
-            hit_table = create_raw_hits(hits_descr, np.sum(accepted_event))
-        table = calc_position(numb_events, device_nmb, device_row[dut], device_columns[dut], device_columns_pitch[dut],
+            table = calc_position_untriggered(numb_events, device_nmb, device_row[dut], device_columns[dut], device_columns_pitch[dut],
                            device_row_pitch[dut], deltax[dut], deltay[dut], hit_data, dut, hit_table, 
                            trigger, accepted_event)
+        else: 
+            hit_table = create_raw_hits(hits_descr, np.sum(accepted_event))
+            table = calc_position_triggered(numb_events, device_nmb, device_row[dut], device_columns[dut], device_columns_pitch[dut],
+                            device_row_pitch[dut], deltax[dut], deltay[dut], hit_data, dut, hit_table, 
+                            trigger, accepted_event)
         table = delete_outs(device_columns[dut], device_row[dut], table)
-        create_hit_file(table, folder, str(dut))
+        create_hit_file(table, folder, names[dut])
 
 @njit
 def calc_position(numb_events, device_nmb, row, column, 
@@ -71,15 +74,38 @@ def calc_position(numb_events, device_nmb, row, column,
 
     return hit_table
 
+@njit
+def calc_position_untriggered(numb_events, device_nmb, row, column, 
+                  column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event):
+    
+    x = hit_data[3][dut::device_nmb]
+    y = hit_data[4][dut::device_nmb]
+    event = 0
+    for part in range(numb_events):
+        hit_table['event_number'][part] = event + 1
+        hit_table['column'][part] = ((x[part] + deltax)/column_pitch + column/2) + 1
+        hit_table['row'][part] = ((y[part] + deltay)/row_pitch + row/2) + 1
+        if accepted_event[part] == True:
+            event += 1
+    return hit_table
+
+@njit
+def calc_position_triggered(numb_events, device_nmb, row, column, 
+                  column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event):
+    
+    x = hit_data[3][dut::device_nmb]
+    y = hit_data[4][dut::device_nmb]
+    event = 0
+    for part in range(numb_events):
+        if accepted_event[part] == True:
+            hit_table['event_number'][event] = event + 1
+            hit_table['column'][event] = ((x[part] + deltax)/column_pitch + column/2) + 1
+            hit_table['row'][event] = ((y[part] + deltay)/row_pitch + row/2) + 1
+            event += 1
+    return hit_table
 
 def create_raw_hits(raw_hits_descr, n_events):
     return np.zeros(n_events, dtype=raw_hits_descr)
-
-def calc_column_position(deltax, column_pitch, column, hit_pos):
-    return ((hit_pos + deltax)/column_pitch + column/2)
-
-def calc_row_position(deltay, row_pitch, row, hit_pos):
-    return ((hit_pos + deltay)/row_pitch + row/2)
 
 def delete_outs(column, row, hit_table):
     hit_table = np.delete(hit_table, np.where(hit_table['column']>column))
