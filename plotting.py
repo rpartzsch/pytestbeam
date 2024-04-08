@@ -34,10 +34,10 @@ yellowish = cm.naviaS.resampled(8)(3)
 from tqdm import tqdm
 
 def plot_default(devices, names, hit_tables, event, log):
-    if len(hit_tables[0][0:len(devices)]) > 100000:
+    if len(hit_tables[0][0::len(devices)]) > 100000:
         nevents = 100000
     else:
-        nevents = len(hit_tables)
+        nevents = len(hit_tables[0][0::len(devices)])
     events = plot_events(devices, names, hit_tables, event, log)
     energy = plot_energy_distribution(names, hit_tables, log, nevents)
     time = plot_times_distribution(names, hit_tables, log, nevents)
