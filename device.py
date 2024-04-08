@@ -3,6 +3,7 @@ from numba import njit
 import tables as tb
 import numpy as np
 from numba.typed import List
+from numba_progress import ProgressBar
 
 def calculate_device_hit(beam, devices, hit_data, names, folder):
 
@@ -36,14 +37,16 @@ def calculate_device_hit(beam, devices, hit_data, names, folder):
     for dut in range(device_nmb):
         if trigger[dut] == False:
             hit_table = create_raw_hits(hits_descr, numb_events)
-            table = calc_position_untriggered(numb_events, device_nmb, device_row[dut], device_columns[dut], device_columns_pitch[dut],
-                           device_row_pitch[dut], deltax[dut], deltay[dut], hit_data, dut, hit_table, 
-                           trigger, accepted_event)
+            with ProgressBar(total=numb_events) as progress:
+                table = calc_position_untriggered(numb_events, device_nmb, device_row[dut], device_columns[dut], device_columns_pitch[dut],
+                            device_row_pitch[dut], deltax[dut], deltay[dut], hit_data, dut, hit_table, 
+                            trigger, accepted_event, progress)
         else: 
             hit_table = create_raw_hits(hits_descr, np.sum(accepted_event))
-            table = calc_position_triggered(numb_events, device_nmb, device_row[dut], device_columns[dut], device_columns_pitch[dut],
-                            device_row_pitch[dut], deltax[dut], deltay[dut], hit_data, dut, hit_table, 
-                            trigger, accepted_event)
+            with ProgressBar(total=numb_events) as progress:
+                table = calc_position_triggered(numb_events, device_nmb, device_row[dut], device_columns[dut], device_columns_pitch[dut],
+                                device_row_pitch[dut], deltax[dut], deltay[dut], hit_data, dut, hit_table, 
+                                trigger, accepted_event, progress)
         table = delete_outs(device_columns[dut], device_row[dut], table)
         create_hit_file(table, folder, names[dut])
 
@@ -76,7 +79,7 @@ def calc_position(numb_events, device_nmb, row, column,
 
 @njit
 def calc_position_untriggered(numb_events, device_nmb, row, column, 
-                  column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event):
+                  column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event, progress_proxy):
     
     x = hit_data[3][dut::device_nmb]
     y = hit_data[4][dut::device_nmb]
@@ -87,11 +90,12 @@ def calc_position_untriggered(numb_events, device_nmb, row, column,
         hit_table['row'][part] = ((y[part] + deltay)/row_pitch + row/2) + 1
         if accepted_event[part] == True:
             event += 1
+        progress_proxy.update(1)
     return hit_table
 
 @njit
 def calc_position_triggered(numb_events, device_nmb, row, column, 
-                  column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event):
+                  column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event, progress_proxy):
     
     x = hit_data[3][dut::device_nmb]
     y = hit_data[4][dut::device_nmb]
@@ -102,6 +106,7 @@ def calc_position_triggered(numb_events, device_nmb, row, column,
             hit_table['column'][event] = ((x[part] + deltax)/column_pitch + column/2) + 1
             hit_table['row'][event] = ((y[part] + deltay)/row_pitch + row/2) + 1
             event += 1
+        progress_proxy.update(1)
     return hit_table
 
 def create_raw_hits(raw_hits_descr, n_events):

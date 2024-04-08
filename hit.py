@@ -2,6 +2,7 @@ import numpy as np
 from numba import njit
 from numba.typed import List
 import pylandau
+from numba_progress import ProgressBar
 
 def tracks(beam, devices, materials):
 
@@ -62,18 +63,21 @@ def tracks(beam, devices, materials):
     energy = List()
     [energy.append(i) for i in [beam['energy']-energy_lost[0][0]]]
 
-    return generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, 
+    with ProgressBar(total=numb_events) as progress:
+        energy, anglex, angley, x, y, z, time_stamp = generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, 
                            z_positions, scatter_thickness, 
                            beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, 
                         particle_distance, beam_anglex, beam_angley, energy_lost, beam_energy,
-                        x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg, rad_length)
+                        x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg, rad_length, progress)
+    
+    return energy, anglex, angley, x, y, z, time_stamp
 
 @njit
 def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_positions, scatter_thickness, 
                         beam_locx, beam_sigmax, beam_locy,
                         beam_sigmay, beam_dispx, beam_dispy, time_stamp, particle_distance, beam_anglex, beam_angley, 
-                        energy_lost, beam_energy, x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg, rad_length):
+                        energy_lost, beam_energy, x_extend_pos, x_extend_neg, y_extend_pos, y_extend_neg, rad_length, progress_proxy):
     for events in range(numb_events):
         for device in range(device_nmb):
             if z[-1] != z_positions[device]:
@@ -98,6 +102,7 @@ def generate_tracks(energy, anglex, angley, x, y, z, numb_events, device_nmb, z_
             x.append(draw_1dgauss(beam_locx, beam_sigmax))
             y.append(draw_1dgauss(beam_locy, beam_sigmay))
             time_stamp.append(np.random.poisson(particle_distance)+time_stamp[-1])
+        progress_proxy.update(1)
     return energy, anglex, angley, x, y, z, time_stamp
 
 @njit

@@ -20,6 +20,7 @@ if __name__ == '__main__':
 
     devicess = [setup['deviceses'][dev] for dev in setup['deviceses']]
     beam = setup['beam']
+    
     hit_tables = hit.tracks(beam, devicess, materials)
     device.calculate_device_hit(beam, devicess, hit_tables, names, folder)
 
