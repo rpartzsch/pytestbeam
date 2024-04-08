@@ -18,7 +18,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 4600
+      z_position: 46000
       delta_x: 0
       delta_y: 0
       trigger: untriggered
@@ -30,7 +30,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 9170
+      z_position: 91700
       delta_x: 0
       delta_y: 0
       trigger: untriggered
@@ -42,7 +42,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 16585
+      z_position: 165850
       delta_x: 100
       delta_y: 0
       trigger: untriggered
@@ -54,7 +54,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 18715
+      z_position: 187150
       delta_x: 0
       delta_y: 0
       trigger: untriggered
@@ -66,20 +66,20 @@ deviceses:
       column_pitch: 50
       row_pitch: 50
       thickness: 300
-      z_position: 22470
+      z_position: 224700
       delta_x: 0
       delta_y: 0
       trigger: triggered
       material: silicon
 
 beam:
-    energy: 10000
+    energy: 3600.0
     sigma_x: 2000
     sigma_y: 200
     loc_x: 0
     loc_y: 0
-    x_disp: 0.005
-    y_disp: 0.005
+    x_disp: 0.001
+    y_disp: 0.001
     x_angle: 0
     y_angle: 0
     nmb_particles: 1000000
