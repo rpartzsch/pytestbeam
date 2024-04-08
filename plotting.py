@@ -3,6 +3,7 @@ import tables as tb
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+import logging
 
 import matplotlib as mpl
 mpl.rcParams['figure.figsize'] = [10,7]
@@ -29,9 +30,12 @@ whiteish = cm.naviaS.resampled(6)(4) # whiteish
 blue = cm.naviaS.resampled(6)(1) # blue
 yellowish = cm.naviaS.resampled(8)(3)
 
+from tqdm import tqdm
 
-def plot_events(devices, names, hit_tables, event, savefig=False):
 
+def plot_events(devices, names, hit_tables, event, log, savefig=False):
+
+    log.info('Creating example event plot')
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111, projection='3d')
 
@@ -51,7 +55,7 @@ def plot_events(devices, names, hit_tables, event, savefig=False):
         ax.plot_surface(x, dut['z_position'] , y, color = cm.naviaS.resampled(len(devices))(len(devices)-i), alpha=0.5, label='%s' %names[i])
         i += 1
         
-    for eve in event:
+    for eve in tqdm(event):
         x_line = []
         y_line = []
         z_line = []

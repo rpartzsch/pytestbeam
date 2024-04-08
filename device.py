@@ -5,7 +5,7 @@ import numpy as np
 from numba.typed import List
 from numba_progress import ProgressBar
 
-def calculate_device_hit(beam, devices, hit_data, names, folder):
+def calculate_device_hit(beam, devices, hit_data, names, folder, log):
 
     hits_descr = np.dtype([
         ('event_number', '<i8'),
@@ -34,7 +34,9 @@ def calculate_device_hit(beam, devices, hit_data, names, folder):
     [trigger.append(True) if trig == 'triggered' else trigger.append(False) for trig in [dut['trigger'] for dut in devices]]
     accepted_event = np.random.uniform(0, 1, numb_events) < 0.6
 
+    log.info('Calculating particle hit positions')
     for dut in range(device_nmb):
+        log.info('Hit positions of %s' %names[dut])
         if trigger[dut] == False:
             hit_table = create_raw_hits(hits_descr, numb_events)
             with ProgressBar(total=numb_events) as progress:
@@ -77,7 +79,7 @@ def calc_position(numb_events, device_nmb, row, column,
 
     return hit_table
 
-@njit
+@njit(nogil=True)
 def calc_position_untriggered(numb_events, device_nmb, row, column, 
                   column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event, progress_proxy):
     
@@ -93,7 +95,7 @@ def calc_position_untriggered(numb_events, device_nmb, row, column,
         progress_proxy.update(1)
     return hit_table
 
-@njit
+@njit(nogil=True)
 def calc_position_triggered(numb_events, device_nmb, row, column, 
                   column_pitch, row_pitch, deltax, deltay, hit_data, dut, hit_table, trigger, accepted_event, progress_proxy):
     
