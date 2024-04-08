@@ -3,6 +3,7 @@ from numba import njit, prange
 from numba.typed import List
 import pylandau
 from numba_progress import ProgressBar
+import tables as tb
 
 def tracks(beam, devices, materials, log):
 
@@ -174,3 +175,42 @@ def landau(delta, energy, z, Z, A, rho, x):
     beta = np.sqrt(1-1/(1+(energy/0.511)**2))
     zet = zeta(z, Z, A, beta, rho, x)
     return pylandau.landau(lamb(zet, delta, beta))/zet
+
+def create_output_tracks(hit_table, folder):
+    hits_descr = np.dtype([
+        ('energy', float),
+        ('x_angle', float),
+        ('y_angle', float),
+        ('x', float),
+        ('y', float),
+        ('z', float),
+        ('time_stamp', np.uint16)])
+    
+    numb = len(hit_table[0])
+    hit_table_out = np.zeros(numb, dtype=hits_descr)
+    hit_table_out = create_hit_array(hit_table, hit_table_out, numb)
+    hit_table_out['time_stamp'] = hit_table[6]
+    out_file_h5 = tb.open_file(filename=folder +'particle_tracks.h5', mode='w')
+    output_hits_table = out_file_h5.create_table(where=out_file_h5.root,
+                                                    name='Tracks',
+                                                    description=hits_descr,
+                                                    title='Raw particle tracks',
+                                                    filters=tb.Filters(
+                                                    complib='blosc',
+                                                    complevel=5,
+                                                    fletcher32=False))
+
+    output_hits_table.append(hit_table_out)
+    output_hits_table.flush()
+    out_file_h5.close()
+
+@njit
+def create_hit_array(hit_table, hit_table_out, numb):
+    for i in range(numb):
+        hit_table_out['energy'][i] = hit_table[0][i]
+        hit_table_out['x_angle'][i] = hit_table[1][i]
+        hit_table_out['y_angle'][i] = hit_table[2][i]
+        hit_table_out['x'][i] = hit_table[3][i]
+        hit_table_out['y'][i] = hit_table[4][i]
+        hit_table_out['z'][i] = hit_table[5][i]
+    return hit_table_out

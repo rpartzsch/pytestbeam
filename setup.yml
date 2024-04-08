@@ -41,7 +41,7 @@ deviceses:
       row: 1
       column_pitch: 10000
       row_pitch: 10000
-      thickness: 100
+      thickness: 200
       z_position: 120700
       delta_x: 0
       delta_y: 0
@@ -98,3 +98,5 @@ beam:
     particle_rate: 5000
 
 data_output: 'output_data/'
+plotting: True
+saving_tracks: False

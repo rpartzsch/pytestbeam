@@ -34,15 +34,34 @@ yellowish = cm.naviaS.resampled(8)(3)
 from tqdm import tqdm
 
 def plot_default(devices, names, hit_tables, event, log):
+    if len(hit_tables[0][0:len(devices)]) > 100000:
+        nevents = 100000
+    else:
+        nevents = len(hit_tables)
     events = plot_events(devices, names, hit_tables, event, log)
-    energy = plot_energy_distribution(names, hit_tables, log)
-    x_angles = plot_xangle_distribution(names, hit_tables, log)
-    y_angles = plot_yangle_distribution(names, hit_tables, log)
+    energy = plot_energy_distribution(names, hit_tables, log, nevents)
+    time = plot_times_distribution(names, hit_tables, log, nevents)
+    x_angles_last = plot_xangle_distribution(names, hit_tables, log, len(names), nevents)
+    y_angles_last = plot_yangle_distribution(names, hit_tables, log, len(names), nevents)
+    x_angles_first = plot_xangle_distribution(names, hit_tables, log, 1, nevents)
+    y_angles_first = plot_yangle_distribution(names, hit_tables, log, 1, nevents)
+    x_last = plot_x_distribution(names, hit_tables, log, len(names), nevents)
+    y_last = plot_y_distribution(names, hit_tables, log, len(names), nevents)
+    x_first = plot_x_distribution(names, hit_tables, log, 1, nevents)
+    y_first = plot_y_distribution(names, hit_tables, log, 1, nevents)
+
     pdf_pages = PdfPages('output_data/output_plots.pdf')
     pdf_pages.savefig(events)
     pdf_pages.savefig(energy)
-    pdf_pages.savefig(x_angles)
-    pdf_pages.savefig(y_angles)
+    pdf_pages.savefig(time)
+    pdf_pages.savefig(x_first)
+    pdf_pages.savefig(y_first)
+    pdf_pages.savefig(x_last)
+    pdf_pages.savefig(y_last)
+    pdf_pages.savefig(x_angles_first)
+    pdf_pages.savefig(y_angles_first)
+    pdf_pages.savefig(x_angles_last)
+    pdf_pages.savefig(y_angles_last)
     pdf_pages.close()
 
 def plot_events(devices, names, hit_tables, event, log):
@@ -66,15 +85,17 @@ def plot_events(devices, names, hit_tables, event, log):
 
         ax.plot_surface(x, dut['z_position'] , y, color = cm.naviaS.resampled(len(devices))(len(devices)-i), alpha=0.5, label='%s' %names[i])
         i += 1
-        
+
+    x_hits = hit_tables[3]
+    y_hits = hit_tables[4]
     for eve in tqdm(event):
         x_line = []
         y_line = []
         z_line = []
         i = 0
         for dut in devices:
-            x_line.append(hit_tables[3][i::len(devices)][eve])
-            y_line.append(hit_tables[4][i::len(devices)][eve])
+            x_line.append(x_hits[i::len(devices)][eve])
+            y_line.append(y_hits[i::len(devices)][eve])
             z_line.append(dut['z_position'])
             ax.plot(x_line, z_line, y_line, color='red')
             i += 1
@@ -94,16 +115,19 @@ def plot_events(devices, names, hit_tables, event, log):
     #     plt.show()
 
 
-def plot_energy_distribution(names, hit_tables, log):
-    events = 100000
+def plot_energy_distribution(names, hit_tables, log, events):
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111)
     log.info('Plotting energy distribution of first %s events' %events)
     i = 0
     numb_devices = len(names)
+    energies = hit_tables[0]
     for dut in tqdm(range(numb_devices)):
-        bin = int(np.std(hit_tables[0][i::(numb_devices)][:events])*300)
-        ax.hist(hit_tables[0][i::numb_devices][:events], bins=bin ,color=cm.naviaS.resampled(numb_devices)(numb_devices-i), label='%s' %names[i], alpha=0.7)
+        try:
+            bin = int(np.std(energies[i::(numb_devices)][:events])*300)
+        except:
+            bin = 10
+        ax.hist(energies[i::numb_devices][:events], bins=bin ,color=cm.naviaS.resampled(numb_devices)(numb_devices-i), label='%s' %names[i], alpha=0.7)
         i += 1
 
     ax.set_xlabel('Energy [MeV]')
@@ -113,17 +137,27 @@ def plot_energy_distribution(names, hit_tables, log):
     ax.grid()
     return fig
 
-def plot_xangle_distribution(names, hit_tables, log):
-    events = 100000
+def plot_times_distribution(names, hit_tables, log, events):
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111)
-    log.info('Plotting x angle distribution of first %s events' %events)
+    i = 0
     numb_devices = len(names)
-    i = numb_devices - 1
-    for dut in tqdm(range(1)):
-        ax.hist(hit_tables[1][i::numb_devices][:events], bins=100 ,color=blue, label='%s' %names[i])
-        
+    log.info('Plotting temporal distribution of first %s events' %events)
+    ax.hist(np.subtract(hit_tables[6][0::numb_devices][1:events+1],hit_tables[6][0::numb_devices][:events])*0.001, bins=100 ,color=blue)
 
+    ax.set_xlabel('Time [$\mu$s]')
+    ax.set_ylabel('#')
+    ax.set_title('Time distribution')
+    ax.grid()
+    return fig
+
+def plot_xangle_distribution(names, hit_tables, log, numb_device, events):
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info('Plotting x angle distribution of first %s events on %s' %(events, names[numb_device - 1]))
+    i = numb_device - 1
+    ax.hist(hit_tables[1][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
+        
     ax.set_xlabel('x angle [rad]')
     ax.set_ylabel('#')
     ax.set_title('x angle distribution after devices')
@@ -131,15 +165,12 @@ def plot_xangle_distribution(names, hit_tables, log):
     ax.grid()
     return fig
 
-def plot_yangle_distribution(names, hit_tables, log):
-    events = 100000
+def plot_yangle_distribution(names, hit_tables, log, numb_device, events):
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111)
-    log.info('Plotting y angle distribution of first %s events' %events)
-    numb_devices = len(names)
-    i = numb_devices - 1
-    for dut in tqdm(range(1)):
-        ax.hist(hit_tables[2][i::numb_devices][:events], bins=100 ,color=blue, label='%s' %names[i])
+    log.info('Plotting y angle distribution of first %s events on %s' %(events, names[numb_device - 1]))
+    i = numb_device - 1
+    ax.hist(hit_tables[2][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
 
     ax.set_xlabel('y angle [rad]')
     ax.set_ylabel('#')
@@ -147,6 +178,35 @@ def plot_yangle_distribution(names, hit_tables, log):
     ax.legend()
     ax.grid()
     return fig
+
+def plot_x_distribution(names, hit_tables, log, numb_device, events):
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info('Plotting x distribution of first %s events on %s' %(events, names[numb_device - 1]))
+    i = numb_device - 1
+    ax.hist(hit_tables[1][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
+        
+    ax.set_xlabel('x [$\mu$m]')
+    ax.set_ylabel('#')
+    ax.set_title('x distribution after devices')
+    ax.legend()
+    ax.grid()
+    return fig
+
+def plot_y_distribution(names, hit_tables, log, numb_device, events):
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info('Plotting y distribution of first %s events on %s' %(events, names[numb_device - 1]))
+    i = numb_device - 1
+    ax.hist(hit_tables[2][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
+
+    ax.set_xlabel('y angle [$\mu$m]')
+    ax.set_ylabel('#')
+    ax.set_title('y distribution after devices')
+    ax.legend()
+    ax.grid()
+    return fig
+
 
 
 def correlate(file_1, file_2, dut_1, dut_2):

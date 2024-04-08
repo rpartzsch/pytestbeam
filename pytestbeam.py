@@ -26,7 +26,10 @@ if __name__ == '__main__':
     beam = setup['beam']
     
     hit_tables = hit.tracks(beam, devicess, materials, log)
+    if setup['saving_tracks']:
+        log.info('Saving tracks this takes forever...')
+        hit.create_output_tracks(hit_tables, folder)
     device.calculate_device_hit(beam, devicess, hit_tables, names, folder, log)
 
-    plot_default(devicess, names, hit_tables, np.arange(1, 6, 1), log)
-    # plot_events(devicess, names, hit_tables, np.arange(1, 6, 1), log, savefig=True)
+    if setup['plotting']:
+        plot_default(devicess, names, hit_tables, np.arange(1, 6, 1), log)
