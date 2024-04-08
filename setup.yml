@@ -36,6 +36,18 @@ deviceses:
       trigger: untriggered
       material: silicon
 
+  lead:
+      column: 1
+      row: 1
+      column_pitch: 10000
+      row_pitch: 10000
+      thickness: 100
+      z_position: 120700
+      delta_x: 0
+      delta_y: 0
+      trigger: untriggered
+      material: lead
+
   mimosa26_p4:
       column: 1152
       row: 576

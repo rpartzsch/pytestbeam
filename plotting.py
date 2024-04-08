@@ -3,7 +3,8 @@ import tables as tb
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-import logging
+from matplotlib.backends.backend_pdf import PdfPages
+
 
 import matplotlib as mpl
 mpl.rcParams['figure.figsize'] = [10,7]
@@ -32,13 +33,24 @@ yellowish = cm.naviaS.resampled(8)(3)
 
 from tqdm import tqdm
 
+def plot_default(devices, names, hit_tables, event, log):
+    events = plot_events(devices, names, hit_tables, event, log)
+    energy = plot_energy_distribution(names, hit_tables, log)
+    x_angles = plot_xangle_distribution(names, hit_tables, log)
+    y_angles = plot_yangle_distribution(names, hit_tables, log)
+    pdf_pages = PdfPages('output_data/output_plots.pdf')
+    pdf_pages.savefig(events)
+    pdf_pages.savefig(energy)
+    pdf_pages.savefig(x_angles)
+    pdf_pages.savefig(y_angles)
+    pdf_pages.close()
 
-def plot_events(devices, names, hit_tables, event, log, savefig=False):
+def plot_events(devices, names, hit_tables, event, log):
 
-    log.info('Creating example event plot')
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111, projection='3d')
 
+    log.info('Plotting example event plot')
     i = 0
     x_line = []
     y_line = []
@@ -71,12 +83,70 @@ def plot_events(devices, names, hit_tables, event, log, savefig=False):
     ax.set_xlabel('x [$\mu$m]')
     ax.set_ylabel('z [$\mu$m]')
     ax.set_zlabel('y [$\mu$m]')
+    ax.set_title('Example event plot')
     ax.legend()
 
-    if savefig:
-        plt.savefig('output_data/example_events.pdf')
-    else:
-        plt.show()
+    return fig
+
+    # if savefig:
+    #     plt.savefig('output_data/example_events.pdf')
+    # else:
+    #     plt.show()
+
+
+def plot_energy_distribution(names, hit_tables, log):
+    events = 100000
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info('Plotting energy distribution of first %s events' %events)
+    i = 0
+    numb_devices = len(names)
+    for dut in tqdm(range(numb_devices)):
+        bin = int(np.std(hit_tables[0][i::(numb_devices)][:events])*300)
+        ax.hist(hit_tables[0][i::numb_devices][:events], bins=bin ,color=cm.naviaS.resampled(numb_devices)(numb_devices-i), label='%s' %names[i], alpha=0.7)
+        i += 1
+
+    ax.set_xlabel('Energy [MeV]')
+    ax.set_ylabel('#')
+    ax.set_title('Energy distribution after devices')
+    ax.legend()
+    ax.grid()
+    return fig
+
+def plot_xangle_distribution(names, hit_tables, log):
+    events = 100000
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info('Plotting x angle distribution of first %s events' %events)
+    numb_devices = len(names)
+    i = numb_devices - 1
+    for dut in tqdm(range(1)):
+        ax.hist(hit_tables[1][i::numb_devices][:events], bins=100 ,color=blue, label='%s' %names[i])
+        
+
+    ax.set_xlabel('x angle [rad]')
+    ax.set_ylabel('#')
+    ax.set_title('x angle distribution after devices')
+    ax.legend()
+    ax.grid()
+    return fig
+
+def plot_yangle_distribution(names, hit_tables, log):
+    events = 100000
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info('Plotting y angle distribution of first %s events' %events)
+    numb_devices = len(names)
+    i = numb_devices - 1
+    for dut in tqdm(range(1)):
+        ax.hist(hit_tables[2][i::numb_devices][:events], bins=100 ,color=blue, label='%s' %names[i])
+
+    ax.set_xlabel('y angle [rad]')
+    ax.set_ylabel('#')
+    ax.set_title('y angle distribution after devices')
+    ax.legend()
+    ax.grid()
+    return fig
 
 
 def correlate(file_1, file_2, dut_1, dut_2):
