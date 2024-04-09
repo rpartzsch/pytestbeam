@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from matplotlib.backends.backend_pdf import PdfPages
-
+from scipy import optimize
 
 import matplotlib as mpl
 mpl.rcParams['figure.figsize'] = [10,7]
@@ -143,10 +143,15 @@ def plot_times_distribution(names, hit_tables, log, events):
     i = 0
     numb_devices = len(names)
     log.info('Plotting temporal distribution of first %s events' %events)
-    ax.hist(np.subtract(hit_tables[6][0::numb_devices][1:events+1],hit_tables[6][0::numb_devices][:events])*0.001, bins=100 ,color=blue)
-
+    bin_heights, bin_borders, _ = ax.hist(np.subtract(hit_tables[6][0::numb_devices][1:events+1],hit_tables[6][0::numb_devices][:events])*0.001, bins=100 ,color=blue)
+    bin_centers = centers_from_borders_numba(bin_borders)
+    popt, _ = optimize.curve_fit(gauss, bin_centers, bin_heights, p0=[np.max(bin_heights), np.mean(bin_centers), np.std(bin_centers)])
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+    ax.plot(x_interval_for_fit, gauss(x_interval_for_fit, *popt), 
+            label='Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$s\n$\sigma$ = %.6f $\mu$s'%(popt[0], popt[1], popt[2]), color=lightgreen, linewidth=3)
     ax.set_xlabel('Time [$\mu$s]')
     ax.set_ylabel('#')
+    ax.legend()
     ax.set_title('Time distribution')
     ax.grid()
     return fig
@@ -156,11 +161,15 @@ def plot_xangle_distribution(names, hit_tables, log, numb_device, events):
     ax = fig.add_subplot(111)
     log.info('Plotting x angle distribution of first %s events on %s' %(events, names[numb_device - 1]))
     i = numb_device - 1
-    ax.hist(hit_tables[1][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
-        
+    bin_heights, bin_borders, _ = ax.hist(hit_tables[1][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
+    bin_centers = centers_from_borders_numba(bin_borders)
+    popt, _ = optimize.curve_fit(gauss, bin_centers, bin_heights, p0=[np.max(bin_heights), np.mean(bin_centers), np.std(bin_centers)])
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+    ax.plot(x_interval_for_fit, gauss(x_interval_for_fit, *popt), 
+            label='Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad'%(popt[0], popt[1], popt[2]), color=lightgreen, linewidth=3)
     ax.set_xlabel('x angle [rad]')
     ax.set_ylabel('#')
-    ax.set_title('x angle distribution after devices')
+    ax.set_title('x angle distribution after %s' %names[i])
     ax.legend()
     ax.grid()
     return fig
@@ -170,11 +179,15 @@ def plot_yangle_distribution(names, hit_tables, log, numb_device, events):
     ax = fig.add_subplot(111)
     log.info('Plotting y angle distribution of first %s events on %s' %(events, names[numb_device - 1]))
     i = numb_device - 1
-    ax.hist(hit_tables[2][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
-
+    bin_heights, bin_borders, _ = ax.hist(hit_tables[2][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
+    bin_centers = centers_from_borders_numba(bin_borders)
+    popt, _ = optimize.curve_fit(gauss, bin_centers, bin_heights, p0=[np.max(bin_heights), np.mean(bin_centers), np.std(bin_centers)])
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+    ax.plot(x_interval_for_fit, gauss(x_interval_for_fit, *popt), 
+            label='Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad'%(popt[0], popt[1], popt[2]), color=lightgreen, linewidth=3)
     ax.set_xlabel('y angle [rad]')
     ax.set_ylabel('#')
-    ax.set_title('y angle distribution after devices')
+    ax.set_title('y angle distribution after %s' %names[i])
     ax.legend()
     ax.grid()
     return fig
@@ -184,11 +197,15 @@ def plot_x_distribution(names, hit_tables, log, numb_device, events):
     ax = fig.add_subplot(111)
     log.info('Plotting x distribution of first %s events on %s' %(events, names[numb_device - 1]))
     i = numb_device - 1
-    ax.hist(hit_tables[1][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
-        
+    bin_heights, bin_borders, _ = ax.hist(hit_tables[3][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
+    bin_centers = centers_from_borders_numba(bin_borders)
+    popt, _ = optimize.curve_fit(gauss, bin_centers, bin_heights, p0=[np.max(bin_heights), np.mean(bin_centers), np.std(bin_centers)])
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+    ax.plot(x_interval_for_fit, gauss(x_interval_for_fit, *popt), 
+            label='Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m'%(popt[0], popt[1], popt[2]), color=lightgreen, linewidth=3)
     ax.set_xlabel('x [$\mu$m]')
     ax.set_ylabel('#')
-    ax.set_title('x distribution after devices')
+    ax.set_title('x distribution after %s' %names[i])
     ax.legend()
     ax.grid()
     return fig
@@ -198,16 +215,34 @@ def plot_y_distribution(names, hit_tables, log, numb_device, events):
     ax = fig.add_subplot(111)
     log.info('Plotting y distribution of first %s events on %s' %(events, names[numb_device - 1]))
     i = numb_device - 1
-    ax.hist(hit_tables[2][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
-
-    ax.set_xlabel('y angle [$\mu$m]')
+    bin_heights, bin_borders, _ = ax.hist(hit_tables[4][i::len(names)][:events], bins=100 ,color=blue, label='%s' %names[i])
+    bin_centers = centers_from_borders_numba(bin_borders)
+    popt, _ = optimize.curve_fit(gauss, bin_centers, bin_heights, p0=[np.max(bin_heights), np.mean(bin_centers), np.std(bin_centers)])
+    x_interval_for_fit = np.linspace(bin_borders[0], bin_borders[-1], 10000)
+    ax.plot(x_interval_for_fit, gauss(x_interval_for_fit, *popt), 
+            label='Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m'%(popt[0], popt[1], popt[2]), color=lightgreen, linewidth=3)
+    ax.set_xlabel('y [$\mu$m]')
     ax.set_ylabel('#')
-    ax.set_title('y distribution after devices')
+    ax.set_title('y distribution after %s' %names[i])
     ax.legend()
     ax.grid()
     return fig
 
 
+def gauss(x, A, mu, sigma):
+    """classic Gaussian function"""
+    return (
+        A / (sigma * np.sqrt(2 * np.pi)) * np.exp(-((x - mu) ** 2) / (2 * sigma**2))
+    )
+
+
+
+@njit
+def centers_from_borders_numba(b):
+    centers = np.empty(b.size - 1, np.float64)
+    for idx in range(b.size - 1):
+        centers[idx] = b[idx] + (b[idx+1] - b[idx]) / 2
+    return centers
 
 def correlate(file_1, file_2, dut_1, dut_2):
     with tb.open_file(file_1, "r") as in_file:

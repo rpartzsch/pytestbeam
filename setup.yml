@@ -87,14 +87,14 @@ deviceses:
 beam:
     energy: 3600.0
     sigma_x: 2000
-    sigma_y: 200
+    sigma_y: 2000
     loc_x: 0
     loc_y: 0
     x_disp: 0.001
     y_disp: 0.001
     x_angle: 0
     y_angle: 0
-    nmb_particles: 1000000
+    nmb_particles: 200000
     particle_rate: 5000
 
 data_output: 'output_data/'
