@@ -32,4 +32,4 @@ if __name__ == '__main__':
     device.calculate_device_hit(beam, devicess, hit_tables, names, folder, log)
 
     if setup['plotting']:
-        plot_default(devicess, names, hit_tables, np.arange(1, 6, 1), log)
+        plot_default(devicess, names, hit_tables, np.arange(1, 6, 1), folder, log)

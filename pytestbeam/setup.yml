@@ -30,23 +30,23 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 91700
+      z_position: 91000
       delta_x: 0
       delta_y: 0
       trigger: untriggered
       material: silicon
 
-  lead:
-      column: 1
-      row: 1
-      column_pitch: 10000
-      row_pitch: 10000
-      thickness: 200
-      z_position: 120700
-      delta_x: 0
-      delta_y: 0
-      trigger: untriggered
-      material: lead
+#   lead:
+#       column: 1
+#       row: 1
+#       column_pitch: 10000
+#       row_pitch: 10000
+#       thickness: 200
+#       z_position: 120700
+#       delta_x: 0
+#       delta_y: 0
+#       trigger: untriggered
+#       material: lead
 
   mimosa26_p4:
       column: 1152
@@ -54,7 +54,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 165850
+      z_position: 16600
       delta_x: 100
       delta_y: 0
       trigger: untriggered
@@ -66,7 +66,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 187150
+      z_position: 187000
       delta_x: 0
       delta_y: 0
       trigger: untriggered
@@ -78,25 +78,25 @@ deviceses:
       column_pitch: 50
       row_pitch: 50
       thickness: 300
-      z_position: 224700
+      z_position: 225000
       delta_x: 0
       delta_y: 0
       trigger: triggered
       material: silicon
 
 beam:
-    energy: 3600.0
-    sigma_x: 2000
-    sigma_y: 2000
+    energy: 2500.0
+    sigma_x: 5000
+    sigma_y: 5000
     loc_x: 0
     loc_y: 0
     x_disp: 0.001
     y_disp: 0.001
     x_angle: 0
     y_angle: 0
-    nmb_particles: 200000
+    nmb_particles: 300000
     particle_rate: 5000
 
-data_output: 'output_data/'
+data_output: '/media/data/ALLPIX/itk/run_15/'
 plotting: True
 saving_tracks: False

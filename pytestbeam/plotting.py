@@ -33,7 +33,7 @@ yellowish = cm.naviaS.resampled(8)(3)
 
 from tqdm import tqdm
 
-def plot_default(devices, names, hit_tables, event, log):
+def plot_default(devices, names, hit_tables, event, folder, log):
     if len(hit_tables[0][0::len(devices)]) > 100000:
         nevents = 100000
     else:
@@ -50,7 +50,7 @@ def plot_default(devices, names, hit_tables, event, log):
     x_first = plot_x_distribution(names, hit_tables, log, 1, nevents)
     y_first = plot_y_distribution(names, hit_tables, log, 1, nevents)
 
-    pdf_pages = PdfPages('output_data/output_plots.pdf')
+    pdf_pages = PdfPages(folder + 'output_plots.pdf')
     pdf_pages.savefig(events)
     pdf_pages.savefig(energy)
     pdf_pages.savefig(time)
