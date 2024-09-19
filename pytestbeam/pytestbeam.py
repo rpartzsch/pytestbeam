@@ -17,6 +17,8 @@ if __name__ == '__main__':
         material = yaml.full_load(file)
 
     folder = setup['data_output']
+    if folder == None:
+        folder = 'output_data/'
 
     device_material = [setup['deviceses'][dev]['material'] for dev in setup['deviceses']]
     materials = [material[device_material[i]] for i in range(len(device_material))]

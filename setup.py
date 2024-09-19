@@ -4,11 +4,10 @@ from setuptools import find_packages
 author = 'Rasmus Partzsch'
 
 # Requirements
-install_requires = ['pylandau', 'coloredlogs', 'tables', 'tqdm', 'numba_progress'
+install_requires = ['pylandau', 'coloredlogs', 'tables', 'tqdm', 'numba_progress', 'matplotlib', 'cmcrameri', 'pyyaml'
                     ]
 
-with open('VERSION') as version_file:
-    version = version_file.read().strip()
+version = '0.9'
 
 setup(
     name='pytestbeam',

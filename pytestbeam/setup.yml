@@ -97,6 +97,6 @@ beam:
     nmb_particles: 300000
     particle_rate: 5000
 
-data_output: '/media/data/ALLPIX/itk/run_15/'
+data_output:  
 plotting: True
 saving_tracks: False
