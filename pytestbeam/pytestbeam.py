@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import hit
 import device
-from plotting import correlate, plot_events, plot_default
+from plotting import plot_events, plot_default
 import yaml
 import logger
 

@@ -92,7 +92,7 @@ def calc_position_untriggered(numb_events, device_nmb, row, column,
     else:
         small_pixel = row_pitch
     for part in range(numb_events):
-        cluster_radius = calc_cluster_radius()
+        cluster_radius = calc_cluster_radius(hit_data[0][part])
         column_hits, row_hits = calc_cluster_hits(column_pitch, column, deltax, x[part], row_pitch, row, deltay, y[part], cluster_radius, small_pixel)
         cluster_size = len(column_hits)
         stop = start + cluster_size
@@ -121,7 +121,7 @@ def calc_position_triggered(numb_events, device_nmb, row, column,
         small_pixel = row_pitch
     for part in range(numb_events):
         if accepted_event[part] == True:
-            cluster_radius = calc_cluster_radius()
+            cluster_radius = calc_cluster_radius(hit_data[0][part])
             column_hits, row_hits = calc_cluster_hits(column_pitch, column, deltax, x[part], row_pitch, row, deltay, y[part], cluster_radius, small_pixel)
             cluster_size = len(column_hits)
             stop = start + cluster_size
@@ -140,8 +140,13 @@ def create_raw_hits(raw_hits_descr, n_events):
     return np.zeros(100*n_events, dtype=raw_hits_descr)
 
 @njit(nogil=True)
-def calc_cluster_radius():
-    return np.abs(np.random.normal(0, 60))
+def calc_cluster_radius(energie):
+    k = 8.6173324e-5
+    T = 300
+    distance = 300
+    bias = 100
+    sigma = distance * np.sqrt(2*k*T/bias) 
+    return np.abs(np.random.normal(0, sigma))
 
 @njit(nogil=True)
 def calc_cluster_hits(column_pitch, column, deltax, particle_loc_x, row_pitch, row, deltay, particle_loc_y, cluster_radius, small_pixel):

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy import optimize
+import itertools
 
 import matplotlib as mpl
 mpl.rcParams['figure.figsize'] = [10,7]
@@ -49,6 +50,9 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     y_last = plot_y_distribution(names, hit_tables, log, len(names), nevents)
     x_first = plot_x_distribution(names, hit_tables, log, 1, nevents)
     y_first = plot_y_distribution(names, hit_tables, log, 1, nevents)
+    device_1 = folder + 'mimosa26_p4_dut.h5'
+    device_2 = folder + 'itkpix_dut.h5'
+    corr = plot_correlation(device_1, device_2, log, max_cols=(1200, 410), max_rows=(600, 410))
 
     pdf_pages = PdfPages(folder + 'output_plots.pdf')
     pdf_pages.savefig(events)
@@ -62,6 +66,7 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     pdf_pages.savefig(y_angles_first)
     pdf_pages.savefig(x_angles_last)
     pdf_pages.savefig(y_angles_last)
+    pdf_pages.savefig(corr)
     pdf_pages.close()
 
 def plot_events(devices, names, hit_tables, event, log):
@@ -236,6 +241,94 @@ def gauss(x, A, mu, sigma):
     )
 
 
+def plot_correlation(
+    path_in_device_x,
+    path_in_device_y,
+    log, 
+    max_cols=(512, 512),
+    max_rows=(512, 512),
+    offset=0,
+    event_size=50000,
+    event_numb_shift=0,
+):
+
+    log.info('Plotting correlation')
+
+    if event_size == None:
+        with tb.open_file(path_in_device_x, "r") as file:
+            table = file.root.Hits[:]
+            device_x = np.copy(table)
+
+        with tb.open_file(path_in_device_y, "r") as file:
+            table = file.root.Hits[:]
+            device_y = np.copy(table)
+
+    else:
+        with tb.open_file(path_in_device_x, "r") as file:
+            table = file.root.Hits[:]
+            device_x = np.copy(table)
+            device_x = device_x[np.where((device_x["event_number"] <= offset+event_size) & (offset<=device_x["event_number"]))]
+
+        with tb.open_file(path_in_device_y, "r") as file:
+            table = file.root.Hits[:]
+            device_y = np.copy(table)
+            device_y = device_y[np.where((device_y["event_number"] <= offset+event_size) & (offset<=device_y["event_number"]))]
+
+    device_y["event_number"] = device_y["event_number"] + event_numb_shift
+
+    device_x = np.delete(
+        device_x,
+        np.where(np.isin(device_x["event_number"], device_y["event_number"]) == False),
+    )
+    device_y = np.delete(
+        device_y,
+        np.where(np.isin(device_y["event_number"], device_x["event_number"]) == False),
+    )
+
+    x_corr_hist, y_corr_hist = np.zeros(max_cols, dtype=np.int32), np.zeros(max_rows, dtype=np.int32)
+
+    buffer_x, buffer_y = _eventloop(device_x, device_y, x_corr_hist, y_corr_hist)
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 12))
+    # axacol = figcol.add_subplot(111)
+
+    # colormap.set_bad((0,0,0))
+    im_col = ax[0].imshow(
+        buffer_x,
+        interpolation="nearest",
+        origin="lower",
+        cmap=colormap,
+        aspect=0.66,
+        norm=LogNorm(),
+    )
+
+    ax[0].grid()
+    ax[0].set_xlabel("Column device x")
+    ax[0].set_ylabel("Column device y")
+    # ax[0].colorbar(im_col, ax=ax[0])
+    cbar = plt.colorbar(im_col, ax=ax[0])
+    cbar.set_label("#")
+
+    # figrow = plt.figure( figsize=(12, 12))
+    # axarow = figcol.add_subplot(111)
+
+    im_row = ax[1].imshow(
+        buffer_y,
+        interpolation="nearest",
+        origin="lower",
+        cmap=colormap,
+        aspect=0.66,
+        norm=LogNorm(),
+    )
+
+    ax[1].grid()
+    ax[1].set_xlabel("Row device x")
+    ax[1].set_ylabel("Row device y")
+    cbar = plt.colorbar(im_row, ax=ax[1])
+    cbar.set_label("#")
+    # ax[1].colorbar(im_row, ax=ax[1])
+    # fig.colorbar(im_row, ax=ax[1])
+    return fig
 
 @njit
 def centers_from_borders_numba(b):
@@ -244,103 +337,41 @@ def centers_from_borders_numba(b):
         centers[idx] = b[idx] + (b[idx+1] - b[idx]) / 2
     return centers
 
-def correlate(file_1, file_2, dut_1, dut_2):
-    with tb.open_file(file_1, "r") as in_file:
-        dut_hits = in_file.root.Hits[:]
+def _eventloop(device_1, device_2, x_hist, y_hist):
+    dev_1_ev = device_1["event_number"]
+    dev_2_ev = device_2["event_number"]
 
-    with tb.open_file(file_2, "r") as in_file:
-        ref_hits = in_file.root.Hits[:]
+    dev_1_row = device_1["row"]
+    dev_2_row = device_2["row"]
 
+    dev_1_column = device_1["column"]
+    dev_2_column = device_2["column"]
 
-    @njit
-    def correlate_position_on_event_number(ref_event_numbers, dut_event_numbers, ref_x_indices, ref_y_indices, dut_x_indices, dut_y_indices, x_corr_hist, y_corr_hist):
-        """Correlating the hit/cluster positions on event basis including all permutations.
-        The hit/cluster positions are used to fill the X and Y correlation histograms.
-        Does the same than the merge of the pandas package:
-            df = data_1.merge(data_2, how='left', on='event_number')
-            df.dropna(inplace=True)
-            correlation_column = np.hist2d(df[column_mean_dut_0], df[column_mean_dut_x])
-            correlation_row = np.hist2d(df[row_mean_dut_0], df[row_mean_dut_x])
-        The following code is > 10x faster than the above code.
-        Parameters
-        ----------
-        ref_event_numbers: array
-            Event number array of the reference DUT.
-        dut_event_numbers: array
-            Event number array of the second DUT.
-        ref_x_indices: array
-            X position indices of the refernce DUT.
-        ref_y_indices: array
-            Y position indices of the refernce DUT.
-        dut_x_indices: array
-            X position indices of the second DUT.
-        dut_y_indices: array
-            Y position indices of the second DUT.
-        x_corr_hist: array
-            X correlation array (2D).
-        y_corr_hist: array
-            Y correlation array (2D).
-        """
-        dut_index = 0
+    for i in tqdm(
+        range(np.min(dev_1_ev), np.max(dev_1_ev))
+    ):
+        list1_column = dev_1_column[dev_1_ev == i]
+        list2_column = dev_2_column[dev_2_ev == i]
+        if (
+            len(list1_column) != 0
+            and len(list2_column) != 0
+        ):
+            list1_row = (dev_1_row[dev_1_ev == i])
+            list2_row = (dev_2_row[dev_2_ev == i])
 
-        # Loop to determine the needed result array size.astype(np.uint32)
-        for ref_index in range(ref_event_numbers.shape[0]):
+            comb_col = list(itertools.product(list1_column, list2_column))
+            comb_row = list(itertools.product(list1_row, list2_row))
 
-            while dut_index < dut_event_numbers.shape[0] and dut_event_numbers[dut_index] < ref_event_numbers[ref_index]:  # Catch up with outer loop
-                dut_index += 1
+            for m in range(len(comb_col)):
+                x_hist[comb_col[m][0], comb_col[m][1]] += 1
 
-            for curr_dut_index in range(dut_index, dut_event_numbers.shape[0]):
-                if ref_event_numbers[ref_index] == dut_event_numbers[curr_dut_index]:
-                    x_index_ref = ref_x_indices[ref_index]
-                    y_index_ref = ref_y_indices[ref_index]
-                    x_index_dut = dut_x_indices[curr_dut_index]
-                    y_index_dut = dut_y_indices[curr_dut_index]
+            for m in range(len(comb_row)):
+                y_hist[comb_row[m][0], comb_row[m][1]] += 1
 
-                    # Add correlation to histogram
-                    x_corr_hist[x_index_dut, x_index_ref] += 1
-                    y_corr_hist[y_index_dut, y_index_ref] += 1
-                else:
-                    break
-
-    x_corr_hist, y_corr_hist = np.zeros((dut_1['column'], dut_2['column']), dtype=np.int16), np.zeros((dut_1['row'], dut_2['row']), dtype=np.int32)
-    ref_ev = ref_hits["event_number"]
-    dut_ev = dut_hits["event_number"]
-    ref_x = ref_hits["row"]
-    ref_y = ref_hits["column"]
-    dut_x = dut_hits["row"]
-    dut_y = dut_hits["column"]
-
-    correlate_position_on_event_number(
-        ref_event_numbers=ref_ev,
-        dut_event_numbers=dut_ev,
-        ref_x_indices=ref_x,
-        ref_y_indices=ref_y,
-        dut_x_indices=dut_x,
-        dut_y_indices=dut_y,
-        x_corr_hist=x_corr_hist,
-        y_corr_hist=y_corr_hist
-    )
+    return x_hist, y_hist
 
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 30))
 
-    pcm = ax1.imshow(x_corr_hist, norm=LogNorm(), aspect=0.8, cmap=colormap, origin='lower')
-    ax1.grid()
-    ax1.set_xlabel('Row DUT 1')
-    ax1.set_ylabel('Row DUT 2')
-    cbar = fig.colorbar(pcm, ax=ax1, shrink=0.3)
-    cbar.set_label('#')
-    # plt.savefig("corr_x.pdf")
-    # plt.close()
-
-    # ax[1].imshow(y_corr_hist, norm=LogNorm(), aspect=0.66, cmap=colormap, origin='lower')
-    pcm = ax2.imshow(y_corr_hist, norm=LogNorm(), aspect=0.8, cmap=colormap, origin='lower')
-    ax2.grid()
-    ax2.set_xlabel('Column DUT 1')
-    ax2.set_ylabel('Column DUT 2')
-    
-    cbar = fig.colorbar(pcm, ax=ax2, shrink=0.3)
-    cbar.set_label('#')
 
 
     # plt.imshow(x_corr_hist, norm=LogNorm(), aspect=0.66, cmap=colormap, origin='lower')
