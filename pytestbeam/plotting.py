@@ -50,8 +50,8 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     y_last = plot_y_distribution(names, hit_tables, log, len(names), nevents)
     x_first = plot_x_distribution(names, hit_tables, log, 1, nevents)
     y_first = plot_y_distribution(names, hit_tables, log, 1, nevents)
-    device_1 = folder + 'mimosa26_p4_dut.h5'
-    device_2 = folder + 'itkpix_dut.h5'
+    device_1 = folder + names[0] + '_dut.h5'
+    device_2 = folder + names[-1] + '_dut.h5'
     corr = plot_correlation(device_1, device_2, log, max_cols=(1200, 410), max_rows=(600, 410))
 
     pdf_pages = PdfPages(folder + 'output_plots.pdf')

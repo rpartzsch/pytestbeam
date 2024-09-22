@@ -144,20 +144,32 @@ def calc_cluster_radius(energie):
     k = 8.6173324e-5
     T = 300
     distance = 300
-    bias = 100
+    bias = 10
     sigma = distance * np.sqrt(2*k*T/bias) 
+    sigma = 10
     return np.abs(np.random.normal(0, sigma))
 
 @njit(nogil=True)
 def calc_cluster_hits(column_pitch, column, deltax, particle_loc_x, row_pitch, row, deltay, particle_loc_y, cluster_radius, small_pixel):
     hits_column = []
     hits_row = []
-    for loc in range(int(cluster_radius/small_pixel) + 1):
-        hits_column.append(((particle_loc_x + deltax)/column_pitch + column/2) + 1 + loc)
-        hits_row.append(((particle_loc_y + deltay)/row_pitch + row/2) + 1 + loc)
-        if loc > 0:
-            hits_column.append(((particle_loc_x + deltax)/column_pitch + column/2) + 1 - loc)
-            hits_row.append(((particle_loc_y + deltay)/row_pitch + row/2) + 1 - loc)
+    last_col = 0
+    last_row = 0
+    # for loc in range(int(cluster_radius/small_pixel) + 1):
+    for y in range(int(cluster_radius)):
+        for x in range(int(cluster_radius)):
+            distance = x**2 + y**2
+            if distance < cluster_radius**2:
+                calc_col = int((particle_loc_x + deltax + x)/column_pitch + column/2) + 1
+                calc_row = int((particle_loc_y + deltay + y)/row_pitch + row/2) + 1
+                if calc_col != last_col and calc_row != last_row:
+                    hits_column.append(calc_col)
+                    hits_row.append(calc_row)
+                    if x > 0 or y > 0:
+                        hits_column.append(int((particle_loc_x + deltax - x)/column_pitch + column/2) + 1)
+                        hits_row.append(int((particle_loc_y + deltay - y)/row_pitch + row/2) + 1)
+                last_col = calc_col
+                last_row = calc_row
     return hits_column, hits_row
 
 def delete_outs(column, row, hit_table):

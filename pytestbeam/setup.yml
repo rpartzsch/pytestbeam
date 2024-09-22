@@ -18,7 +18,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 46000
+      z_position: 30250
       delta_x: 0
       delta_y: 0
       trigger: untriggered
@@ -30,7 +30,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 91000
+      z_position: 61800
       delta_x: 0
       delta_y: 0
       trigger: untriggered
@@ -54,8 +54,20 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 16600
+      z_position: 202550
       delta_x: 100
+      delta_y: 0
+      trigger: untriggered
+      material: silicon
+
+  mimosa26_p5:
+      column: 1152
+      row: 576
+      column_pitch: 18.4
+      row_pitch: 18.4
+      thickness: 50
+      z_position: 225000
+      delta_x: 0
       delta_y: 0
       trigger: untriggered
       material: silicon
@@ -66,7 +78,7 @@ deviceses:
       column_pitch: 18.4
       row_pitch: 18.4
       thickness: 50
-      z_position: 187000
+      z_position: 250700
       delta_x: 0
       delta_y: 0
       trigger: untriggered
@@ -78,7 +90,7 @@ deviceses:
       column_pitch: 50
       row_pitch: 50
       thickness: 300
-      z_position: 225000
+      z_position: 288150
       delta_x: 0
       delta_y: 0
       trigger: triggered
