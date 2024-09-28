@@ -52,7 +52,7 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     y_first = plot_y_distribution(names, hit_tables, log, 1, nevents)
     device_1 = folder + names[0] + '_dut.h5'
     device_2 = folder + names[-1] + '_dut.h5'
-    corr = plot_correlation(device_1, device_2, log, max_cols=(1200, 410), max_rows=(600, 410))
+    corr = plot_correlation(device_1, device_2, names[0], names[-1], log, max_cols=(1200, 410), max_rows=(600, 410))
 
     pdf_pages = PdfPages(folder + 'output_plots.pdf')
     pdf_pages.savefig(events)
@@ -244,6 +244,8 @@ def gauss(x, A, mu, sigma):
 def plot_correlation(
     path_in_device_x,
     path_in_device_y,
+    names_1,
+    names_2,
     log, 
     max_cols=(512, 512),
     max_rows=(512, 512),
@@ -289,7 +291,8 @@ def plot_correlation(
 
     buffer_x, buffer_y = _eventloop(device_x, device_y, x_corr_hist, y_corr_hist)
 
-    fig, ax = plt.subplots(1, 2, figsize=(12, 12))
+    fig, ax = plt.subplots(1, 2, figsize=(12, 12), constrained_layout=True)
+    # fig.tight_layout()
     # axacol = figcol.add_subplot(111)
 
     # colormap.set_bad((0,0,0))
@@ -303,8 +306,8 @@ def plot_correlation(
     )
 
     ax[0].grid()
-    ax[0].set_xlabel("Column device x")
-    ax[0].set_ylabel("Column device y")
+    ax[0].set_xlabel("Column %s" %names_1)
+    ax[0].set_ylabel("Column %s" %names_2)
     # ax[0].colorbar(im_col, ax=ax[0])
     cbar = plt.colorbar(im_col, ax=ax[0])
     cbar.set_label("#")
@@ -322,8 +325,8 @@ def plot_correlation(
     )
 
     ax[1].grid()
-    ax[1].set_xlabel("Row device x")
-    ax[1].set_ylabel("Row device y")
+    ax[1].set_xlabel("Row %s" %names_1)
+    ax[1].set_ylabel("Row %s" %names_2)
     cbar = plt.colorbar(im_row, ax=ax[1])
     cbar.set_label("#")
     # ax[1].colorbar(im_row, ax=ax[1])
