@@ -36,18 +36,6 @@ deviceses:
       trigger: untriggered
       material: silicon
 
-#   lead:
-#       column: 1
-#       row: 1
-#       column_pitch: 10000
-#       row_pitch: 10000
-#       thickness: 200
-#       z_position: 120700
-#       delta_x: 0
-#       delta_y: 0
-#       trigger: untriggered
-#       material: lead
-
   mimosa26_p4:
       column: 1152
       row: 576
@@ -106,9 +94,9 @@ beam:
     y_disp: 0.001
     x_angle: 0
     y_angle: 0
-    nmb_particles: 300000
+    nmb_particles: 30000
     particle_rate: 5000
 
 data_output:  
-plotting: True
+plotting: False
 saving_tracks: False
