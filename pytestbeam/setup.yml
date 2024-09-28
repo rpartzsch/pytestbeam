@@ -85,7 +85,7 @@ deviceses:
       material: silicon
 
 beam:
-    energy: 2500.0
+    energy: 5000.0
     sigma_x: 5000
     sigma_y: 5000
     loc_x: 0
@@ -94,9 +94,9 @@ beam:
     y_disp: 0.001
     x_angle: 0
     y_angle: 0
-    nmb_particles: 30000
+    nmb_particles: 1000000
     particle_rate: 5000
 
 data_output:  
-plotting: False
+plotting: True
 saving_tracks: False
