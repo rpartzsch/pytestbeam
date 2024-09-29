@@ -71,7 +71,7 @@ def plot_default(devices, names, hit_tables, event, folder, log):
 
 def plot_events(devices, names, hit_tables, event, log):
 
-    fig = plt.figure(figsize=(12, 12))
+    fig = plt.figure(figsize=(12, 12), constrained_layout=True)
     ax = fig.add_subplot(111, projection='3d')
 
     log.info('Plotting example event plot')
@@ -331,6 +331,7 @@ def plot_correlation(
     cbar.set_label("#")
     # ax[1].colorbar(im_row, ax=ax[1])
     # fig.colorbar(im_row, ax=ax[1])
+    fig.suptitle('Correlation first-last device, 50k events', fontsize=16)
     return fig
 
 @njit
