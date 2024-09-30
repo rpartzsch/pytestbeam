@@ -90,8 +90,8 @@ beam:
     sigma_y: 5000
     loc_x: 0
     loc_y: 0
-    x_disp: 0.0002
-    y_disp: 0.0002
+    x_disp: 0.0001
+    y_disp: 0.0001
     x_angle: 0
     y_angle: 0
     nmb_particles: 1000000

@@ -41,6 +41,9 @@ def plot_default(devices, names, hit_tables, event, folder, log):
         nevents = len(hit_tables[0][0::len(devices)])
     events = plot_events(devices, names, hit_tables, event, log)
     energy = plot_energy_distribution(names, hit_tables, log, nevents)
+    device_1 = folder + names[0] + '_dut.h5'
+    device_2 = folder + names[-1] + '_dut.h5'
+    corr = plot_correlation(device_1, device_2, names[0], names[-1], log, max_cols=(1200, 410), max_rows=(600, 410))
     time = plot_times_distribution(names, hit_tables, log, nevents)
     x_angles_last = plot_xangle_distribution(names, hit_tables, log, len(names), nevents)
     y_angles_last = plot_yangle_distribution(names, hit_tables, log, len(names), nevents)
@@ -50,13 +53,11 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     y_last = plot_y_distribution(names, hit_tables, log, len(names), nevents)
     x_first = plot_x_distribution(names, hit_tables, log, 1, nevents)
     y_first = plot_y_distribution(names, hit_tables, log, 1, nevents)
-    device_1 = folder + names[0] + '_dut.h5'
-    device_2 = folder + names[-1] + '_dut.h5'
-    corr = plot_correlation(device_1, device_2, names[0], names[-1], log, max_cols=(1200, 410), max_rows=(600, 410))
 
     pdf_pages = PdfPages(folder + 'output_plots.pdf')
     pdf_pages.savefig(events)
     pdf_pages.savefig(energy)
+    pdf_pages.savefig(corr)
     pdf_pages.savefig(time)
     pdf_pages.savefig(x_first)
     pdf_pages.savefig(y_first)
@@ -66,7 +67,6 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     pdf_pages.savefig(y_angles_first)
     pdf_pages.savefig(x_angles_last)
     pdf_pages.savefig(y_angles_last)
-    pdf_pages.savefig(corr)
     pdf_pages.close()
 
 def plot_events(devices, names, hit_tables, event, log):
