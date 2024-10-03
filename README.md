@@ -1,5 +1,6 @@
 # pytestbeam
-Python based Monte-Carlo simulation of a test beam setup. An EUDET-type Beam telescope is implemented,
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+Python based Monte Carlo simulation of a test beam setup. An EUDET-type Beam telescope is implemented,
 but other devices can simply be added. 
 [Numba](https://numba.pydata.org/) allows for performant calculations, this drastically reduces the compilation time.
 As the physics cases are really simplified this repository serves mostly demonstration purposes.
