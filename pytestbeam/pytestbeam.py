@@ -1,10 +1,9 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import hit
-import device
-from plotting import plot_events, plot_default
+import main.hit as hit
+import main.device as device
+from main.plotting import plot_default
 import yaml
-import logger
+import main.logger as logger
 
 if __name__ == '__main__':
     log = logger.setup_main_logger('pytestbeam')
