@@ -114,12 +114,6 @@ def plot_events(devices, names, hit_tables, event, log):
 
     return fig
 
-    # if savefig:
-    #     plt.savefig('output_data/example_events.pdf')
-    # else:
-    #     plt.show()
-
-
 def plot_energy_distribution(names, hit_tables, log, events):
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111)
@@ -306,14 +300,11 @@ def plot_correlation(
     )
 
     ax[0].grid()
-    ax[0].set_xlabel("Column %s" %names_1)
-    ax[0].set_ylabel("Column %s" %names_2)
+    ax[0].set_xlabel("Column %s" %names_2)
+    ax[0].set_ylabel("Column %s" %names_1)
     # ax[0].colorbar(im_col, ax=ax[0])
-    cbar = plt.colorbar(im_col, ax=ax[0])
+    cbar = plt.colorbar(im_col, ax=ax[0], shrink=0.5)
     cbar.set_label("#")
-
-    # figrow = plt.figure( figsize=(12, 12))
-    # axarow = figcol.add_subplot(111)
 
     im_row = ax[1].imshow(
         buffer_y,
@@ -325,12 +316,10 @@ def plot_correlation(
     )
 
     ax[1].grid()
-    ax[1].set_xlabel("Row %s" %names_1)
-    ax[1].set_ylabel("Row %s" %names_2)
-    cbar = plt.colorbar(im_row, ax=ax[1])
+    ax[1].set_xlabel("Row %s" %names_2)
+    ax[1].set_ylabel("Row %s" %names_1)
+    cbar = plt.colorbar(im_row, ax=ax[1], shrink=0.5)
     cbar.set_label("#")
-    # ax[1].colorbar(im_row, ax=ax[1])
-    # fig.colorbar(im_row, ax=ax[1])
     fig.suptitle('Correlation first-last device, 50k events', fontsize=16)
     return fig
 
@@ -373,26 +362,3 @@ def _eventloop(device_1, device_2, x_hist, y_hist):
                 y_hist[comb_row[m][0], comb_row[m][1]] += 1
 
     return x_hist, y_hist
-
-
-
-
-
-    # plt.imshow(x_corr_hist, norm=LogNorm(), aspect=0.66, cmap=colormap, origin='lower')
-    # plt.grid()
-    # plt.xlabel('Row DUT 1')
-    # plt.ylabel('Row DUT 2')
-    # cbar = plt.colorbar()
-    # cbar.set_label('#')
-    # plt.savefig("corr_x.pdf")
-    # plt.close()
-
-    # plt.imshow(y_corr_hist, norm=LogNorm(), aspect=0.66, cmap=colormap, origin='lower')
-    # plt.grid()
-    # plt.xlabel('Column DUT 1')
-    # plt.ylabel('Column DUT 2')
-    # # plt.colorbar(aspect=2.05)
-    # cbar = plt.colorbar()
-    # cbar.set_label('#')
-    # plt.savefig("corr_y.pdf")
-    # plt.close()
