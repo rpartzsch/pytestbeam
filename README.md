@@ -3,7 +3,7 @@ Python based Monte-Carlo simulation of a test beam setup. An EUDET-type Beam tel
 but other devices can simply be added. 
 [Numba](https://numba.pydata.org/) allows for performant calculations, this drastically reduces the compilation time.
 As the physics cases are really simplified this repository serves mostly demonstration purposes.
-For a more complete simulation of test beam setups take a look at [Allpix Squared](https://allpix-squared.docs.cern.ch/)
+For a more complete simulation of test beam setups take a look at [Allpix Squared](https://allpix-squared.docs.cern.ch/).
 
 The particle beam consists of electrons with a given rate, beam profile, dispersion, angle and total number of particles.
 Each particle loose energy according to a Langau distribution and scatters according to a Gaussian with the width calculated by the Highlander formula.
@@ -17,9 +17,9 @@ Each device can eater be trigger or untriggered, this only changes part of the d
 <img src="figures/setup_example_events.png" width="450"/>
 
 # Installation
-**pytestbeam** requires [pylandau](https://github.com/SiLab-Bonn/pylandau), this package runs for now only on Python 3.10.
+**pytestbeam** requires [pylandau](https://github.com/SiLab-Bonn/pylandau), this package runs for now only on Python version 3.10.
 
-The package is installed with
+**pytestbeam** and all the requirements are installed with
 ```bash
 git clone https://github.com/rpartzsch/pytestbeam
 cd pytestbeam

@@ -4,7 +4,7 @@ from setuptools import find_packages
 author = 'Rasmus Partzsch'
 
 # Requirements
-install_requires = ['pylandau', 'coloredlogs', 'tables', 'tqdm', 'numba_progress', 'matplotlib', 'cmcrameri', 'pyyaml'
+install_requires = ['numpy', 'pylandau', 'coloredlogs', 'tables', 'tqdm', 'numba_progress', 'matplotlib', 'cmcrameri', 'pyyaml'
                     ]
 
 version = '0.9'
@@ -19,7 +19,7 @@ setup(
     author=author,
     maintainer=author,
     install_requires=install_requires,
-    python_requires=">=3.8",
+    python_requires="<3.11",
     packages=find_packages(),
     include_package_data=True,
     platforms='posix',
