@@ -44,6 +44,8 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     device_1 = folder + names[0] + '_dut.h5'
     device_2 = folder + names[-1] + '_dut.h5'
     corr = plot_correlation(device_1, device_2, names[0], names[-1], log, max_cols=(1200, 410), max_rows=(600, 410))
+    mean_energy = plot_mean_energy_distribution(devices, names, hit_tables, log, nevents)
+    angle_dispersion = plot_angle_dispersion(names, hit_tables, log, len(names), nevents, devices)
     time = plot_times_distribution(names, hit_tables, log, nevents)
     x_angles_last = plot_xangle_distribution(names, hit_tables, log, len(names), nevents)
     y_angles_last = plot_yangle_distribution(names, hit_tables, log, len(names), nevents)
@@ -54,10 +56,13 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     x_first = plot_x_distribution(names, hit_tables, log, 1, nevents)
     y_first = plot_y_distribution(names, hit_tables, log, 1, nevents)
 
+
     pdf_pages = PdfPages(folder + 'output_plots.pdf')
     pdf_pages.savefig(events)
     pdf_pages.savefig(energy)
     pdf_pages.savefig(corr)
+    pdf_pages.savefig(mean_energy)
+    pdf_pages.savefig(angle_dispersion)
     pdf_pages.savefig(time)
     pdf_pages.savefig(x_first)
     pdf_pages.savefig(y_first)
@@ -135,6 +140,63 @@ def plot_energy_distribution(names, hit_tables, log, events):
     ax.legend()
     ax.grid()
     return fig
+
+def plot_mean_energy_distribution(devices, names, hit_tables, log, events):
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info('Plotting mean energy of particles')
+    i = 0
+    numb_devices = len(names)
+    energies = hit_tables[0]
+    eners = []
+    erners_std = []
+    z = []
+    for dut in devices:
+        eners.append(np.mean(energies[i::(numb_devices)][:events]))
+        erners_std.append(np.std(energies[i::(numb_devices)][:events]))
+        z.append(dut['z_position'])
+        i += 1
+
+    ax.errorbar(z, eners, erners_std, fmt='-o', color=blue)
+    
+    ax.set_xlabel(r'Z Position [$\mu m$]')
+    ax.set_ylabel('Energy [MeV]')
+    ax.set_title('Mean Energy distribution after devices')
+    ax.grid()
+    return fig
+
+def plot_angle_dispersion(names, hit_tables, log, numb_device, events, devices):
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info('Plotting angle dispersion')
+    # i = numb_device - 1
+    std_x = []
+    std_y = []
+    z = []
+    i = 0
+    for dut in devices:
+        bin_heights, bin_borders, _ = ax.hist(hit_tables[1][i::len(names)][:events], bins=100)
+        bin_centers = centers_from_borders_numba(bin_borders)
+        popt, _ = optimize.curve_fit(gauss, bin_centers, bin_heights, p0=[np.max(bin_heights), np.mean(bin_centers), np.std(bin_centers)])
+        std_x.append(popt[2])
+        bin_heights, bin_borders, _ = ax.hist(hit_tables[2][i::len(names)][:events], bins=100)
+        bin_centers = centers_from_borders_numba(bin_borders)
+        popt, _ = optimize.curve_fit(gauss, bin_centers, bin_heights, p0=[np.max(bin_heights), np.mean(bin_centers), np.std(bin_centers)])
+        std_y.append(popt[2])
+        z.append(dut['z_position'])
+        i += 1
+
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    ax.plot(z ,std_x, '-o', color=blue, label='x angle dispersion')
+    ax.plot(z ,std_y, '-o', color=muddygreen, label='y angle dispersion')
+    ax.set_xlabel(r'z position [$\mu m$]')
+    ax.set_ylabel(r'$\sigma$ [rad]')
+    ax.legend()
+    ax.set_title('Angle dispersion after devices')
+    ax.grid()
+    return fig
+
 
 def plot_times_distribution(names, hit_tables, log, events):
     fig = plt.figure(figsize=(12, 12))

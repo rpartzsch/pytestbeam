@@ -1,88 +1,88 @@
 
 deviceses:
-  mimosa26_p1:
-      column: 1152
-      row: 576
-      column_pitch: 18.4
-      row_pitch: 18.4
-      thickness: 50
-      z_position: 0
-      delta_x: 100
-      delta_y: 0
-      trigger: untriggered
-      material: silicon
+    mimosa26_p1:
+        column: 1152
+        row: 576
+        column_pitch: 18.4
+        row_pitch: 18.4
+        thickness: 50
+        z_position: 0
+        delta_x: 100
+        delta_y: 0
+        trigger: untriggered
+        material: silicon
 
-  mimosa26_p2: 
-      column: 1152
-      row: 576
-      column_pitch: 18.4
-      row_pitch: 18.4
-      thickness: 50
-      z_position: 30250
-      delta_x: 0
-      delta_y: 0
-      trigger: untriggered
-      material: silicon
+    mimosa26_p2: 
+        column: 1152
+        row: 576
+        column_pitch: 18.4
+        row_pitch: 18.4
+        thickness: 50
+        z_position: 30250
+        delta_x: 0
+        delta_y: 0
+        trigger: untriggered
+        material: silicon
 
-  mimosa26_p3:
-      column: 1152
-      row: 576
-      column_pitch: 18.4
-      row_pitch: 18.4
-      thickness: 50
-      z_position: 61800
-      delta_x: 0
-      delta_y: 0
-      trigger: untriggered
-      material: silicon
+    mimosa26_p3:
+        column: 1152
+        row: 576
+        column_pitch: 18.4
+        row_pitch: 18.4
+        thickness: 50
+        z_position: 61800
+        delta_x: 0
+        delta_y: 0
+        trigger: untriggered
+        material: silicon
 
-  mimosa26_p4:
-      column: 1152
-      row: 576
-      column_pitch: 18.4
-      row_pitch: 18.4
-      thickness: 50
-      z_position: 202550
-      delta_x: 100
-      delta_y: 0
-      trigger: untriggered
-      material: silicon
+    mimosa26_p4:
+        column: 1152
+        row: 576
+        column_pitch: 18.4
+        row_pitch: 18.4
+        thickness: 50
+        z_position: 202550
+        delta_x: 100
+        delta_y: 0
+        trigger: untriggered
+        material: silicon
 
-  mimosa26_p5:
-      column: 1152
-      row: 576
-      column_pitch: 18.4
-      row_pitch: 18.4
-      thickness: 50
-      z_position: 225000
-      delta_x: 0
-      delta_y: 0
-      trigger: untriggered
-      material: silicon
+    mimosa26_p5:
+        column: 1152
+        row: 576
+        column_pitch: 18.4
+        row_pitch: 18.4
+        thickness: 50
+        z_position: 225000
+        delta_x: 0
+        delta_y: 0
+        trigger: untriggered
+        material: silicon
 
-  mimosa26_p6:
-      column: 1152
-      row: 576
-      column_pitch: 18.4
-      row_pitch: 18.4
-      thickness: 50
-      z_position: 250700
-      delta_x: 0
-      delta_y: 0
-      trigger: untriggered
-      material: silicon
+    mimosa26_p6:
+        column: 1152
+        row: 576
+        column_pitch: 18.4
+        row_pitch: 18.4
+        thickness: 50
+        z_position: 250700
+        delta_x: 0
+        delta_y: 0
+        trigger: untriggered
+        material: silicon
 
-  itkpix:
-      column: 400
-      row: 384
-      column_pitch: 50
-      row_pitch: 50
-      thickness: 300
-      z_position: 288150
-      delta_x: 0
-      delta_y: 0
-      trigger: triggered
-      material: silicon
+    itkpix:
+        column: 400
+        row: 384
+        column_pitch: 50
+        row_pitch: 50
+        thickness: 300
+        z_position: 288150
+        delta_x: 0
+        delta_y: 0
+        trigger: triggered
+        material: silicon
 
 beam:
     energy: 5000.0
