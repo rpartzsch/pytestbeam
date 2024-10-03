@@ -401,7 +401,14 @@ def calc_cluster_hits(
                     hits_row.append(row_hit)
                     hits_column.append(col_hit)
 
-    return hits_column, hits_row
+    if len(hits_column) > 1:
+        res = list(set([(hits_column[i], hits_row[i]) for i in range(len(hits_column))]))
+        col_hits_output = [i[0] for i in res]
+        row_hits_output = [i[1] for i in res]
+    else:
+        col_hits_output = hits_column
+        row_hits_output = hits_row
+    return col_hits_output, row_hits_output
 
 
 def delete_outs(column, row, hit_table):
