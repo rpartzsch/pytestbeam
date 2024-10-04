@@ -51,8 +51,8 @@ def plot_default(devices, names, hit_tables, event, folder, log):
         names[0],
         names[-1],
         log,
-        max_cols=(1200, 410),
-        max_rows=(600, 410),
+        max_cols=(devices[0]['column'] + 1, devices[-1]['column'] + 1),
+        max_rows=(devices[0]['row'] + 1, devices[-1]['row'] + 1),
     )
     mean_energy = plot_mean_energy_distribution(
         devices, names, hit_tables, log, nevents

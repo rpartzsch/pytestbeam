@@ -351,8 +351,9 @@ def calc_cluster_hits(
                     int((particle_loc_x + deltax) / column_pitch + column / 2) + 1 + xy
                 )
                 if row_hit > 1 and row_hit < row:
-                    hits_row.append(row_hit)
-                    hits_column.append(col_hit)
+                    if col_hit > 1 and col_hit < column:
+                        hits_row.append(row_hit)
+                        hits_column.append(col_hit)
 
             if distance_neg_y**2 + distance_neg_x**2 < cluster_radius**2:
                 row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) - xy
@@ -360,8 +361,9 @@ def calc_cluster_hits(
                     int((particle_loc_x + deltax) / column_pitch + column / 2) - xy
                 )
                 if row_hit > 1 and row_hit < row:
-                    hits_row.append(row_hit)
-                    hits_column.append(col_hit)
+                    if col_hit > 1 and col_hit < column:
+                        hits_row.append(row_hit)
+                        hits_column.append(col_hit)
 
         for yx in range(
             int(cluster_radius / np.sqrt((row_pitch**2 + column_pitch**2))) + 2
@@ -389,8 +391,9 @@ def calc_cluster_hits(
                     int((particle_loc_x + deltax) / column_pitch + column / 2) - yx
                 )
                 if row_hit > 1 and row_hit < row:
-                    hits_row.append(row_hit)
-                    hits_column.append(col_hit)
+                    if col_hit > 1 and col_hit < column:
+                        hits_row.append(row_hit)
+                        hits_column.append(col_hit)
 
             if distance_neg_y**2 + distance_pos_x**2 < cluster_radius**2:
                 row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) - yx
@@ -398,8 +401,9 @@ def calc_cluster_hits(
                     int((particle_loc_x + deltax) / column_pitch + column / 2) + yx + 1
                 )
                 if row_hit > 1 and row_hit < row:
-                    hits_row.append(row_hit)
-                    hits_column.append(col_hit)
+                    if col_hit > 1 and col_hit < column:
+                        hits_row.append(row_hit)
+                        hits_column.append(col_hit)
 
     if len(hits_column) > 1:
         res = list(set([(hits_column[i], hits_row[i]) for i in range(len(hits_column))]))

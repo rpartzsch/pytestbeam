@@ -94,7 +94,7 @@ beam:
     y_disp: 0.0001
     x_angle: 0
     y_angle: 0
-    nmb_particles: 1000000
+    nmb_particles: 5000000
     particle_rate: 5000
 
 data_output:  
