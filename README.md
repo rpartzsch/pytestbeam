@@ -1,7 +1,7 @@
 # pytestbeam
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-Python-based Monte Carlo simulation of a test beam setup. An EUDET-type beam telescope is implemented. The telescope consists of MIMOSA26 planes and an ITkPix as a time reference, but other devices can easily be added.
+Python based Monte Carlo simulation of a test beam setup. An EUDET-type beam telescope is implemented. The telescope consists of MIMOSA26 planes and an ITkPix as a time reference, but other devices can easily be added.
 [Numba](https://numba.pydata.org/) allows for performant calculations, drastically reducing compilation time. Since the physics cases are greatly simplified, this repository serves primarily for demonstration purposes. For a more comprehensive simulation of test beam setups, take a look at[Allpix Squared](https://allpix-squared.docs.cern.ch/).
 
 The particle beam consists of electrons with a given rate, beam profile, dispersion, angle, and total number of particles. Each particle loses energy according to a convolution of Landau and a Gaussian distribution and scatters according to a Gaussian distribution, with the width calculated using the Highlander formula. Scattering occurs at an infinitely thin sheet at the device surface, and there is no scattering in the air between the devices.
