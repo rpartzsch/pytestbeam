@@ -406,7 +406,9 @@ def calc_cluster_hits(
                         hits_column.append(col_hit)
 
     if len(hits_column) > 1:
-        res = list(set([(hits_column[i], hits_row[i]) for i in range(len(hits_column))]))
+        res = list(
+            set([(hits_column[i], hits_row[i]) for i in range(len(hits_column))])
+        )
         col_hits_output = [i[0] for i in res]
         row_hits_output = [i[1] for i in res]
     else:
