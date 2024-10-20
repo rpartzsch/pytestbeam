@@ -22,7 +22,6 @@ setup(
     name="pytestbeam",
     version=version,
     description="Pytestbeam",
-    url="https://github.com/Silab-Bonn/aidatlu",
     license="License AGPL-3.0 license",
     long_description=".",
     author=author,

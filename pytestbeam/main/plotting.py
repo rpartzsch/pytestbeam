@@ -179,6 +179,32 @@ def plot_energy_distribution(names, hit_tables, log, events):
     return fig
 
 
+def plot_energy_lost_distribution(names, hit_tables, log, events):
+    fig = plt.figure(figsize=(12, 12))
+    ax = fig.add_subplot(111)
+    log.info("Plotting energy lost distribution of first %s events" % events)
+    device = -1
+    energies = hit_tables[7]
+    try:
+        bin = int(np.std(energies[device][:events]) * 300)
+    except:
+        bin = 10
+    ax.hist(
+        energies[device][:events],
+        bins=bin,
+        color=blue,
+        label="%s" % names[device],
+        alpha=0.7,
+    )
+
+    ax.set_xlabel("Energy [MeV]")
+    ax.set_ylabel("#")
+    ax.set_title("Energy lost distribution after devices")
+    ax.legend()
+    ax.grid()
+    return fig
+
+
 def plot_mean_energy_distribution(devices, names, hit_tables, log, events):
     fig = plt.figure(figsize=(12, 12))
     ax = fig.add_subplot(111)
@@ -445,7 +471,7 @@ def plot_y_distribution(names, hit_tables, log, numb_device, events):
 def gauss(x, A, mu, sigma):
     """classic Gaussian function"""
     return (
-        A / (sigma * np.sqrt(2 * np.pi)) * np.exp(-((x - mu) ** 2) / (2 * sigma**2))
+        A / (sigma * np.sqrt(2 * np.pi)) * np.exp(-((x - mu) ** 2) / (2 * sigma ** 2))
     )
 
 
@@ -504,8 +530,9 @@ def plot_correlation(
         np.where(np.isin(device_y["event_number"], device_x["event_number"]) == False),
     )
 
-    x_corr_hist, y_corr_hist = np.zeros(max_cols, dtype=np.int32), np.zeros(
-        max_rows, dtype=np.int32
+    x_corr_hist, y_corr_hist = (
+        np.zeros(max_cols, dtype=np.int32),
+        np.zeros(max_rows, dtype=np.int32),
     )
 
     buffer_x, buffer_y = _eventloop(device_x, device_y, x_corr_hist, y_corr_hist)

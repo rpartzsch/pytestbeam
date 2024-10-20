@@ -6,7 +6,7 @@ Python based Monte Carlo simulation of a test beam setup. An EUDET-type beam tel
 
 The particle beam consists of electrons with a given rate, beam profile, dispersion, angle, and total number of particles. Each particle loses energy according to a convolution of Landau and a Gaussian distribution and scatters according to a Gaussian distribution, with the width calculated using the Highlander formula. Scattering occurs at an infinitely thin sheet at the device surface, and there is no scattering in the air between the devices.
 
-The devices have rectangular pixels and a mostly uniform material budget, and they are placed in the center of the beam, though they can be shifted off-center. The clusters are calculated by sampling a Gaussian distribution around the particle intersection point, with a width given by the Einstein diffusion formula. Each device can be either triggered or untriggered; this only affects part of the hit data collection, as each beam particle has a given chance to be triggered.
+The devices have rectangular pixels and a mostly uniform material budget, and they are placed in the center of the beam, though they can be shifted off-center. The clusters are calculated by sampling a Gaussian distribution around the particle intersection point, with a width taking diffusion and Coulomb expansion into account. Each device can be either triggered or untriggered; this only affects part of the hit data collection, as each beam particle has a given chance to be triggered.
 
 <img src="figures/setup_example_events.png" width="450"/>
 

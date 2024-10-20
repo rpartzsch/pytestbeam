@@ -17,7 +17,7 @@ def tracks(beam, devices, materials, log):
     beam_anglex = beam["x_angle"]
     beam_angley = beam["y_angle"]
     beam_energy = beam["energy"]
-    particle_distance = 1 / beam["particle_rate"] * 10**9
+    particle_distance = 1 / beam["particle_rate"] * 10 ** 9
 
     Z = List()
     [Z.append(material["Z"]) for material in materials]
@@ -122,7 +122,7 @@ def tracks(beam, devices, materials, log):
             progress,
         )
 
-    return energy, anglex, angley, x, y, z, time_stamp
+    return energy, anglex, angley, x, y, z, time_stamp, energy_lost
 
 
 @njit(nogil=True)
@@ -227,17 +227,7 @@ def fly(length, x_angle, y_angle):
 
 
 def sample_landau_dist_fast(
-    pdf,
-    n,
-    xmin,
-    xmax,
-    energy=30,
-    z=-1,
-    Z=14,
-    A=24,
-    rho=2.33,
-    d=0.02,
-    mode="ntrue",
+    pdf, n, xmin, xmax, energy=30, z=-1, Z=14, A=24, rho=2.33, d=0.02, mode="ntrue"
 ):
     """generates n values between xmin and xmax from the given distribution pdf using MC accept/reject
     expands on https://theoryandpractice.org/stats-ds-book/distributions/accept-reject.html
@@ -269,12 +259,12 @@ def sample_landau_dist_fast(
 
 
 def zeta(z, Z, A, beta, rho, x):
-    return 0.1535 * z**2 * Z * rho * x / (A * beta**2)
+    return 0.1535 * z ** 2 * Z * rho * x / (A * beta ** 2)
 
 
 def lamb(zeta, delta, beta):
     E = 0.000001
-    return 1 / zeta * (delta - 0.025) - beta**2 - np.log(zeta / E) - 1 + np.e
+    return 1 / zeta * (delta - 0.025) - beta ** 2 - np.log(zeta / E) - 1 + np.e
 
 
 def landau(delta, energy, z, Z, A, rho, x):
