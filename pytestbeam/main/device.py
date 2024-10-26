@@ -18,25 +18,26 @@ def calculate_device_hit(beam, devices, hit_data, names, folder, log):
 
     numb_events = beam["nmb_particles"]
     device_nmb = len(devices)
-    z_positions = List()
-    [z_positions.append(i) for i in [dut["z_position"] for dut in devices]]
-    device_columns = List()
-    [device_columns.append(i) for i in [dut["column"] for dut in devices]]
-    device_row = List()
-    [device_row.append(i) for i in [dut["row"] for dut in devices]]
-    device_columns_pitch = List()
-    [device_columns_pitch.append(i) for i in [dut["column_pitch"] for dut in devices]]
-    device_row_pitch = List()
-    [device_row_pitch.append(i) for i in [dut["row_pitch"] for dut in devices]]
-    deltax = List()
-    [deltax.append(i) for i in [dut["delta_x"] for dut in devices]]
-    deltay = List()
-    [deltay.append(i) for i in [dut["delta_y"] for dut in devices]]
+    # Generating device arrays
     trigger = List()
-    [
-        trigger.append(True) if trig == "triggered" else trigger.append(False)
-        for trig in [dut["trigger"] for dut in devices]
-    ]
+    deltay = List()
+    deltax = List()
+    device_row_pitch = List()
+    device_columns_pitch = List()
+    device_row = List()
+    device_columns = List()
+    z_positions = List()
+    for dut in devices:
+        z_positions.append(dut["z_position"])
+        device_columns.append(dut["column"])
+        device_row.append(dut["row"])
+        device_columns_pitch.append(dut["column_pitch"])
+        device_row_pitch.append(dut["row_pitch"])
+        deltax.append(dut["delta_x"])
+        deltay.append(dut["delta_y"])
+        trigger.append(dut["trigger"] == "triggered")
+
+    # Trigger and untriggered device hack
     accepted_event = np.random.uniform(0, 1, numb_events) < 0.7
 
     log.info("Calculating particle hit positions")

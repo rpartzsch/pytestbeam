@@ -8,6 +8,7 @@ import tables as tb
 
 def tracks(beam, devices, materials, log):
     log.info("Creating telescope setup")
+    # reading configuration
     beam_locx = beam["loc_x"]
     beam_sigmax = beam["sigma_x"]
     beam_locy = beam["loc_y"]
@@ -18,59 +19,56 @@ def tracks(beam, devices, materials, log):
     beam_angley = beam["y_angle"]
     beam_energy = beam["energy"]
     particle_distance = 1 / beam["particle_rate"] * 10**9
-
-    Z = List()
-    [Z.append(material["Z"]) for material in materials]
-    A = List()
-    [A.append(material["A"]) for material in materials]
-    rho = List()
-    [rho.append(material["rho"]) for material in materials]
-    rad_length = List()
-    [rad_length.append(material["rad_length"]) for material in materials]
-
-    x_extend_pos = List()
-    [
-        x_extend_pos.append(dut["column_pitch"] * dut["column"] / 2 + dut["delta_x"])
-        for dut in devices
-    ]
-    x_extend_neg = List()
-    [
-        x_extend_neg.append(-dut["column_pitch"] * dut["column"] / 2 + dut["delta_x"])
-        for dut in devices
-    ]
-    y_extend_pos = List()
-    [
-        y_extend_pos.append(dut["row_pitch"] * dut["row"] / 2 + dut["delta_y"])
-        for dut in devices
-    ]
-    y_extend_neg = List()
-    [
-        y_extend_neg.append(-dut["row_pitch"] * dut["row"] / 2 + dut["delta_y"])
-        for dut in devices
-    ]
-    x = List()
-    [x.append(i) for i in [np.random.normal(beam["loc_x"], beam["sigma_x"])]]
-    y = List()
-    [y.append(i) for i in [np.random.normal(beam["loc_y"], beam["sigma_y"])]]
-    z = List()
-    [z.append(i) for i in [0]]
-    numb_events = beam["nmb_particles"]
     device_nmb = len(devices)
+    numb_events = beam["nmb_particles"]
+
+    # Genenerating material budgets
+    Z = List()
+    A = List()
+    rho = List()
+    rad_length = List()
+    for material in materials:
+        Z.append(material["Z"])
+        A.append(material["A"])
+        rho.append(material["rho"])
+        rad_length.append(material["rad_length"])
+
+    # Generating duts
+    x_extend_pos = List()
+    x_extend_neg = List()
+    y_extend_pos = List()
+    y_extend_neg = List()
     z_positions = List()
-    [z_positions.append(i) for i in [dut["z_position"] for dut in devices]]
     scatter_thickness = List()
-    [scatter_thickness.append(i) for i in [dut["thickness"] for dut in devices]]
+    for dut in devices:
+        x_extend_pos.append(dut["column_pitch"] * dut["column"] / 2 + dut["delta_x"])
+        x_extend_neg.append(-dut["column_pitch"] * dut["column"] / 2 + dut["delta_x"])
+        y_extend_pos.append(dut["row_pitch"] * dut["row"] / 2 + dut["delta_y"])
+        y_extend_neg.append(-dut["row_pitch"] * dut["row"] / 2 + dut["delta_y"])
+        z_positions.append(dut["z_position"])
+        scatter_thickness.append(dut["thickness"])
+
+    # Generating starting event
+    x = List()
+    y = List()
+    z = List()
     time_stamp = List()
-    [time_stamp.append(i) for i in [np.random.poisson(particle_distance)]]
+    anglex = List()
+    angley = List()
+    x.append(np.random.normal(beam["loc_x"], beam["sigma_x"]))
+    y.append(np.random.normal(beam["loc_y"], beam["sigma_y"]))
+    z.append(0)
+    time_stamp.append(np.random.poisson(particle_distance))
+
     angle_x, angle_y = scatter(
         scatter_thickness[0], beam["energy"], 0, 0, rad_length[0]
     )
-    anglex = List()
-    [anglex.append(i) for i in [beam["x_angle"] + angle_x]]
-    angley = List()
-    [angley.append(i) for i in [beam["y_angle"] + angle_y]]
+
+    anglex.append(beam["x_angle"] + angle_x)
+    angley.append(beam["y_angle"] + angle_y)
 
     log.info("Generating particle tracks")
+    # Genreating energy loss in each device
     energy_lost = np.zeros((device_nmb, numb_events))
     for dev in range(device_nmb):
         energy_lost[dev] = sample_landau_dist_fast(
@@ -88,7 +86,7 @@ def tracks(beam, devices, materials, log):
         )
 
     energy = List()
-    [energy.append(i) for i in [beam["energy"] - energy_lost[0][0]]]
+    energy.append(beam["energy"] - energy_lost[0][0])
 
     with ProgressBar(total=numb_events) as progress:
         energy, anglex, angley, x, y, z, time_stamp = generate_tracks(
