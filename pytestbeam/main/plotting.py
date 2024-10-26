@@ -471,7 +471,7 @@ def plot_y_distribution(names, hit_tables, log, numb_device, events):
 def gauss(x, A, mu, sigma):
     """classic Gaussian function"""
     return (
-        A / (sigma * np.sqrt(2 * np.pi)) * np.exp(-((x - mu) ** 2) / (2 * sigma ** 2))
+        A / (sigma * np.sqrt(2 * np.pi)) * np.exp(-((x - mu) ** 2) / (2 * sigma**2))
     )
 
 

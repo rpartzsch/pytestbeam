@@ -261,7 +261,7 @@ def calc_cluster_radius(energy):
     Q_tot = e * E / 3.6
 
     coulomb = w_C * np.cbrt(3 * mu_e * Q_tot * t / (4 * np.pi * eps_0 * eps_r))
-    sigma = np.sqrt(diffusion ** 2 + coulomb ** 2) * 1e6
+    sigma = np.sqrt(diffusion**2 + coulomb**2) * 1e6
     return np.abs(np.random.normal(0, sigma))
 
 
@@ -340,7 +340,7 @@ def calc_cluster_hits(
                         hits_column.append(int(seed_pixel_x))
 
         for xy in range(
-            int(cluster_radius / np.sqrt((row_pitch ** 2 + column_pitch ** 2))) + 2
+            int(cluster_radius / np.sqrt((row_pitch**2 + column_pitch**2))) + 2
         ):
             distance_neg_y = np.abs(
                 particle_loc_y
@@ -359,7 +359,7 @@ def calc_cluster_hits(
                 - _hit_from_row_col(seed_pixel_x - xy, deltax, column_pitch, column)
             )
 
-            if distance_pos_y ** 2 + distance_pos_x ** 2 < cluster_radius ** 2:
+            if distance_pos_y**2 + distance_pos_x**2 < cluster_radius**2:
                 row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) + 1 + xy
                 col_hit = (
                     int((particle_loc_x + deltax) / column_pitch + column / 2) + 1 + xy
@@ -369,7 +369,7 @@ def calc_cluster_hits(
                         hits_row.append(row_hit)
                         hits_column.append(col_hit)
 
-            if distance_neg_y ** 2 + distance_neg_x ** 2 < cluster_radius ** 2:
+            if distance_neg_y**2 + distance_neg_x**2 < cluster_radius**2:
                 row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) - xy
                 col_hit = (
                     int((particle_loc_x + deltax) / column_pitch + column / 2) - xy
@@ -380,7 +380,7 @@ def calc_cluster_hits(
                         hits_column.append(col_hit)
 
         for yx in range(
-            int(cluster_radius / np.sqrt((row_pitch ** 2 + column_pitch ** 2))) + 2
+            int(cluster_radius / np.sqrt((row_pitch**2 + column_pitch**2))) + 2
         ):
             distance_neg_y = np.abs(
                 particle_loc_y
@@ -399,7 +399,7 @@ def calc_cluster_hits(
                 - _hit_from_row_col(seed_pixel_x - yx, deltax, column_pitch, column)
             )
 
-            if distance_pos_y ** 2 + distance_neg_x ** 2 < cluster_radius ** 2:
+            if distance_pos_y**2 + distance_neg_x**2 < cluster_radius**2:
                 row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) + 1 + yx
                 col_hit = (
                     int((particle_loc_x + deltax) / column_pitch + column / 2) - yx
@@ -409,7 +409,7 @@ def calc_cluster_hits(
                         hits_row.append(row_hit)
                         hits_column.append(col_hit)
 
-            if distance_neg_y ** 2 + distance_pos_x ** 2 < cluster_radius ** 2:
+            if distance_neg_y**2 + distance_pos_x**2 < cluster_radius**2:
                 row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) - yx
                 col_hit = (
                     int((particle_loc_x + deltax) / column_pitch + column / 2) + yx + 1

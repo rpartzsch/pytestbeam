@@ -1,11 +1,11 @@
 silicon:
   rad_length: 93650
   Z: 14
-  A: 24 
+  A: 24
   rho: 2.33
 
 lead:
   rad_length: 5612
   Z: 82
-  A: 207 
+  A: 207
   rho: 11.35

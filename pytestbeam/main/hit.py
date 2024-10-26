@@ -17,7 +17,7 @@ def tracks(beam, devices, materials, log):
     beam_anglex = beam["x_angle"]
     beam_angley = beam["y_angle"]
     beam_energy = beam["energy"]
-    particle_distance = 1 / beam["particle_rate"] * 10 ** 9
+    particle_distance = 1 / beam["particle_rate"] * 10**9
 
     Z = List()
     [Z.append(material["Z"]) for material in materials]
@@ -259,12 +259,12 @@ def sample_landau_dist_fast(
 
 
 def zeta(z, Z, A, beta, rho, x):
-    return 0.1535 * z ** 2 * Z * rho * x / (A * beta ** 2)
+    return 0.1535 * z**2 * Z * rho * x / (A * beta**2)
 
 
 def lamb(zeta, delta, beta):
     E = 0.000001
-    return 1 / zeta * (delta - 0.025) - beta ** 2 - np.log(zeta / E) - 1 + np.e
+    return 1 / zeta * (delta - 0.025) - beta**2 - np.log(zeta / E) - 1 + np.e
 
 
 def landau(delta, energy, z, Z, A, rho, x):

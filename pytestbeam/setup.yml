@@ -12,7 +12,7 @@ deviceses:
         trigger: untriggered
         material: silicon
 
-    mimosa26_p2: 
+    mimosa26_p2:
         column: 1152
         row: 576
         column_pitch: 18.4
@@ -97,6 +97,6 @@ beam:
     nmb_particles: 2000000
     particle_rate: 5000
 
-data_output:  
+data_output:
 plotting: True
 saving_tracks: False
