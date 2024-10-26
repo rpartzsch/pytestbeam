@@ -25,14 +25,14 @@ if __name__ == "__main__":
     materials = [material[device_material[i]] for i in range(len(device_material))]
     names = [dev for dev in setup["deviceses"]]
 
-    devicess = [setup["deviceses"][dev] for dev in setup["deviceses"]]
+    devices = [setup["deviceses"][dev] for dev in setup["deviceses"]]
     beam = setup["beam"]
 
-    hit_tables = hit.tracks(beam, devicess, materials, log)
+    hit_tables = hit.tracks(beam, devices, materials, log)
     if setup["saving_tracks"]:
         log.info("Saving tracks this takes forever...")
         hit.create_output_tracks(hit_tables, folder)
-    device.calculate_device_hit(beam, devicess, hit_tables, names, folder, log)
+    device.calculate_device_hit(beam, devices, hit_tables, names, folder, log)
 
     if setup["plotting"]:
-        plot_default(devicess, names, hit_tables, np.arange(1, 6, 1), folder, log)
+        plot_default(devices, names, hit_tables, np.arange(1, 6, 1), folder, log)
