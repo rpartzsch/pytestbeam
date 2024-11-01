@@ -1,13 +1,12 @@
 import numpy as np
-from numba import njit, prange
+from numba import njit
 from numba.typed import List
-import pylandau
 from numba_progress import ProgressBar
 import tables as tb
 
 
 def tracks(
-    beam: dict, devices: dict, materials: dict, log: function
+    beam: dict, devices: dict, materials: dict, log
 ) -> tuple[list, list, list, list, list, list, list]:
     """Create test beam setup and generate particle tracks. prepares calculation of particle tracks for Numba.
 
@@ -84,20 +83,23 @@ def tracks(
     # Generating energy loss in each device
     energy_lost = np.zeros((device_nmb, numb_events))
     for dev in range(device_nmb):
-        energy_lost[dev] = sample_landau_dist_fast(
-            landau,
-            numb_events,
-            0,
-            0.5,
-            energy=(beam["energy"] - np.mean(energy_lost[dev - 1])),
-            z=-1,
-            Z=Z[dev],
-            A=A[dev],
-            rho=rho[dev],
-            d=scatter_thickness[dev] * 10 ** (-4),
+        args = (
+            scatter_thickness[dev] * 10 ** (-4),
+            -1,
+            Z[dev],
+            A[dev],
+            (beam["energy"] - np.mean(energy_lost[dev - 1])),
+            rho[dev],
+            1,
+        )
+        energy_lost[dev] = sample_dist_fast(
+            landau_approx,
+            args,
+            n=numb_events,
+            xmin=0,
+            xmax=0.5,
             mode="ntrue",
         )
-
     energy = List()
     energy.append(beam["energy"] - energy_lost[0][0])
 
@@ -165,7 +167,7 @@ def generate_tracks(
     y_extend_pos: list,
     y_extend_neg: list,
     rad_length: list,
-    progress_proxy: function,
+    progress_proxy,
 ) -> tuple[list, list, list, list, list, list, list]:
     """Generate each individual particle track. The energy lost is calculated from a Landau distribution.
         Each particles scatters according to a Gaussian distribution, where the width originates from the Higlander formula.
@@ -322,43 +324,29 @@ def fly(length, x_angle, y_angle):
     return deltax, deltay
 
 
-def sample_landau_dist_fast(
-    pdf: function,
-    n: int,
-    xmin: float,
-    xmax: float,
-    energy: float = 30,
-    z: float = -1,
-    Z: float = 14,
-    A: float = 24,
-    rho: float = 2.33,
-    d: float = 0.02,
-    mode: str = "ntrue",
-) -> np.array:
-    """Generates n values between xmin and xmax from the given distribution pdf using MC accept/reject
-    expands on https://theoryandpractice.org/stats-ds-book/distributions/accept-reject.htm
+def sample_dist_fast(
+    pdf: list, *args: tuple, n: int, xmin: float, xmax: float, mode: str = "ntrue"
+):
+    """generates n values between xmin and xmax from the given distribution pdf using MC accept/reject
+    expands on https://theoryandpractice.org/stats-ds-book/distributions/accept-reject.html
 
     Args:
-        pdf (function): Distribution to draw from
+        pdf (list): Sampling distribution
+        args (tuple): optional arguments of the sampling distribution
         n (int): Number of draws
-        xmin (float): minimum value
-        xmax (float): maximum value
-        energy (float, optional): Energy for the Landau distribution. Defaults to 30.
-        z (float, optional): Charge of the particle. Defaults to -1.
-        Z (float, optional): Atomic number of the scatterer for the Landau distribution . Defaults to 14.
-        A (float, optional): Atomic mass number of the scatter. Defaults to 24.
-        rho (float, optional): Density of the scatterer. Defaults to 2.33.
-        d (float, optional): Thickness of scatter. Defaults to 0.02.
-        mode (str, optional): Draws enough times to create correct number of outputs. Defaults to "ntrue".
+        xmin (float): minimum value of samples
+        xmax (float): maximum value of samples
+        mode (str, optional): Can be either 'ntrue' of 'pdftrue'. With 'ntrue': draws so long until number of accepts equals number of draws 'n'.
+                            With 'pdftrue' draws only 'n' times. 'Defaults to "ntrue".
 
     Returns:
-        np.array: Parameters drawn from the distribution
+        list: Random draws from the given distribution
     """
-
-    # fi for non normalized distributions
+    args = args[0]
+    # fit for non normalized distributions
     x_vals = np.linspace(xmin, xmax, n)
-    pdf_max = np.max(pdf(x_vals, energy, z, Z, A, rho, d))
-    pdf_min = np.min(pdf(x_vals, energy, z, Z, A, rho, d))
+    pdf_max = np.max(pdf(x_vals, *args))
+    pdf_min = np.min(pdf(x_vals, *args))
 
     x = np.random.uniform(
         xmin, xmax, n
@@ -368,10 +356,10 @@ def sample_landau_dist_fast(
     )  # get uniform random y values  between pdfmin and pdfmax
 
     if mode == "ntrue":
-        return np.random.choice(x[y < pdf(x, energy, z, Z, A, rho, d)], size=n)
+        return np.random.choice(x[y < pdf(x, *args)], size=n)
 
     elif mode == "pdftrue":
-        new_n = int(n / (x[y < pdf(x)].size / x.size))
+        new_n = int(n / (x[y < pdf(x, *args)].size / x.size))
         x = np.random.uniform(xmin, xmax, new_n)
         y = np.random.uniform(pdf_min, pdf_max, new_n)
         return x[y < pdf(x)]
@@ -385,11 +373,11 @@ def zeta(z: int, Z: int, A: int, beta: float, rho: float, x: float) -> float:
 
     Args:
         z (int): Charge of the incoming particle
-        Z (int): Atomic number of the scatterer for the Landau distribution . Defaults to 14.
+        Z (int): Atomic number of the scatterer for the Landau distribution. Defaults to 14.
         A (int): Atomic mass number of the scatter. Defaults to 24.
         beta (float): beta value of the particle
         rho (float): Density of the scatterer
-        x (float): variable of the distribution
+        x (float): thickness of scatterer
 
     Returns:
         float: Value of distribution at point x.
@@ -412,26 +400,35 @@ def lamb(zeta: float, delta: float, beta: float) -> float:
     return 1 / zeta * (delta - 0.025) - beta**2 - np.log(zeta / E) - 1 + np.e
 
 
-def landau(
-    delta: float, energy: float, z: int, Z: int, A: int, rho: float, x: float
-) -> function:
-    """_summary_
+def landau_approx(
+    delta: list,
+    x: float,
+    z: float,
+    Z: float,
+    A: float,
+    energy: float,
+    rho: float,
+    a: float,
+):
+    """Approximation of the Landau distribution from to Behrens, S. E.; Melissinos, A.C. Univ. of Rochester Preprint UR-776 (1981)
 
     Args:
-        delta (float): Energy transfer during scattering
-        energy (float): Initial energy of the particle
-        z (int): Charge of the incoming particle
-        Z (int): Atomic number of the scatterer for the Landau distribution
-        A (int): Atomic mass number of the scatter
-        rho (float): Density of the scatterer
-        x (float): variable of the distribution
+        delta (list): List containing energy transvers
+        x (float): Thickness of the scatter
+        z (float): charge of the incoming particle
+        Z (float): Atomic number of the scatterering material
+        A (float): Atomic mass number of the scattering material
+        energy (float): Energy of the incoming particle
+        rho (float): Density of the scattering material
+        a (float): Amplitude of the Landau distribution
 
     Returns:
-        function: Landau distribution
+        list: Probability of energy loss
     """
     beta = np.sqrt(1 - 1 / (1 + (energy / 0.511) ** 2))
     zet = zeta(z, Z, A, beta, rho, x)
-    return pylandau.landau(lamb(zet, delta, beta)) / zet
+    coord = lamb(zet, delta, beta)
+    return a * (1 / np.sqrt(2 * np.pi) * np.exp(-(coord + np.exp(-coord)) / 2))
 
 
 def create_output_tracks(hit_table: tuple, folder: str) -> None:

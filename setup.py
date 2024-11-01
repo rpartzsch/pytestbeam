@@ -6,7 +6,6 @@ author = "Rasmus Partzsch"
 # Requirements
 install_requires = [
     "numpy",
-    "pylandau",
     "coloredlogs",
     "tables",
     "tqdm",
@@ -14,6 +13,7 @@ install_requires = [
     "matplotlib",
     "cmcrameri",
     "pyyaml",
+    "scipy",
 ]
 
 version = "0.9"
@@ -27,7 +27,7 @@ setup(
     author=author,
     maintainer=author,
     install_requires=install_requires,
-    python_requires="<3.11",
+    python_requires=">3.10",
     packages=find_packages(),
     include_package_data=True,
     platforms="posix",

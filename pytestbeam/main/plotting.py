@@ -160,6 +160,8 @@ def plot_energy_distribution(names, hit_tables, log, events):
     for dut in tqdm(range(numb_devices)):
         try:
             bin = int(np.std(energies[i::(numb_devices)][:events]) * 300)
+            if bin == 0:
+                bin = 20
         except:
             bin = 10
         ax.hist(
