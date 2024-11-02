@@ -170,7 +170,6 @@ def calc_position_untriggered(
             deltay,
             y[part],
             cluster_radius,
-            small_pixel,
         )
         cluster_size = len(column_hits)
         if cluster_size > 0:
@@ -225,7 +224,6 @@ def calc_position_triggered(
                 deltay,
                 y[part],
                 cluster_radius,
-                small_pixel,
             )
             cluster_size = len(column_hits)
             if cluster_size > 0:
@@ -277,159 +275,44 @@ def calc_cluster_hits(
     deltay,
     particle_loc_y,
     cluster_radius,
-    small_pixel,
 ):
     hits_column = []
     hits_row = []
     seed_pixel_x = _row_col_from_hit(particle_loc_x, deltax, column_pitch, column)
     seed_pixel_y = _row_col_from_hit(particle_loc_y, deltay, row_pitch, row)
-
-    if seed_pixel_x > 1 and seed_pixel_x < column:
-        if seed_pixel_y > 1 and seed_pixel_y < row:
-            for x in range(0, int(cluster_radius / column_pitch) + 2):
-                distance_neg = np.abs(
-                    particle_loc_x
-                    - _hit_from_row_col(
-                        seed_pixel_x + x + 1, deltax, column_pitch, column
+    if seed_pixel_x >= 1 and seed_pixel_x <= column:
+        if seed_pixel_y >= 1 and seed_pixel_y <= row:
+            col_max = _row_col_from_hit(
+                particle_loc_x + cluster_radius, deltax, column_pitch, column
+            )
+            col_min = _row_col_from_hit(
+                particle_loc_x - cluster_radius, deltax, column_pitch, column
+            )
+            row_max = _row_col_from_hit(
+                particle_loc_y + cluster_radius, deltay, row_pitch, row
+            )
+            row_min = _row_col_from_hit(
+                particle_loc_y - cluster_radius, deltay, row_pitch, row
+            )
+            for cols in range(col_min, col_max + 1):
+                for rows in range(row_min, row_max + 1):
+                    x_test = _hit_from_row_col(
+                        cols, delta=deltax, pitch=column_pitch, number=column
                     )
-                )
-                distance_pos = np.abs(
-                    particle_loc_x
-                    - _hit_from_row_col(seed_pixel_x - x, deltax, column_pitch, column)
-                )
-
-                if distance_pos < cluster_radius:
-                    col_hit = (
-                        int((particle_loc_x + deltax) / column_pitch + column / 2)
-                        + 1
-                        + x
+                    y_test = _hit_from_row_col(
+                        rows, delta=deltay, pitch=row_pitch, number=row
                     )
-                    if col_hit > 1 and col_hit < column:
-                        hits_column.append(col_hit)
-                        hits_row.append(int(seed_pixel_y))
-
-                if distance_neg < cluster_radius:
-                    col_hit = (
-                        int((particle_loc_x + deltax) / column_pitch + column / 2) - x
-                    )
-                    if col_hit > 1 and col_hit < column:
-                        hits_column.append(col_hit)
-                        hits_row.append(int(seed_pixel_y))
-
-            for y in range(0, int(cluster_radius / row_pitch) + 2):
-                distance_neg = np.abs(
-                    particle_loc_y
-                    - _hit_from_row_col(seed_pixel_y + y + 1, deltay, row_pitch, row)
-                )
-                distance_pos = np.abs(
-                    particle_loc_y
-                    - _hit_from_row_col(seed_pixel_y - y, deltay, row_pitch, row)
-                )
-
-                if distance_pos < cluster_radius:
-                    row_hit = (
-                        int((particle_loc_y + deltay) / row_pitch + row / 2) + 1 + y
-                    )
-                    if row_hit > 1 and row_hit < row:
-                        hits_row.append(row_hit)
-                        hits_column.append(int(seed_pixel_x))
-
-                if distance_neg < cluster_radius:
-                    row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) - y
-                    if row_hit > 1 and row_hit < row:
-                        hits_row.append(row_hit)
-                        hits_column.append(int(seed_pixel_x))
-
-        for xy in range(
-            int(cluster_radius / np.sqrt((row_pitch**2 + column_pitch**2))) + 2
-        ):
-            distance_neg_y = np.abs(
-                particle_loc_y
-                - _hit_from_row_col(seed_pixel_y + xy + 1, deltay, row_pitch, row)
-            )
-            distance_pos_y = np.abs(
-                particle_loc_y
-                - _hit_from_row_col(seed_pixel_y - xy, deltay, row_pitch, row)
-            )
-            distance_neg_x = np.abs(
-                particle_loc_x
-                - _hit_from_row_col(seed_pixel_x + xy + 1, deltax, column_pitch, column)
-            )
-            distance_pos_x = np.abs(
-                particle_loc_x
-                - _hit_from_row_col(seed_pixel_x - xy, deltax, column_pitch, column)
-            )
-
-            if distance_pos_y**2 + distance_pos_x**2 < cluster_radius**2:
-                row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) + 1 + xy
-                col_hit = (
-                    int((particle_loc_x + deltax) / column_pitch + column / 2) + 1 + xy
-                )
-                if row_hit > 1 and row_hit < row:
-                    if col_hit > 1 and col_hit < column:
-                        hits_row.append(row_hit)
-                        hits_column.append(col_hit)
-
-            if distance_neg_y**2 + distance_neg_x**2 < cluster_radius**2:
-                row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) - xy
-                col_hit = (
-                    int((particle_loc_x + deltax) / column_pitch + column / 2) - xy
-                )
-                if row_hit > 1 and row_hit < row:
-                    if col_hit > 1 and col_hit < column:
-                        hits_row.append(row_hit)
-                        hits_column.append(col_hit)
-
-        for yx in range(
-            int(cluster_radius / np.sqrt((row_pitch**2 + column_pitch**2))) + 2
-        ):
-            distance_neg_y = np.abs(
-                particle_loc_y
-                - _hit_from_row_col(seed_pixel_y + yx + 1, deltay, row_pitch, row)
-            )
-            distance_pos_y = np.abs(
-                particle_loc_y
-                - _hit_from_row_col(seed_pixel_y - yx, deltay, row_pitch, row)
-            )
-            distance_neg_x = np.abs(
-                particle_loc_x
-                - _hit_from_row_col(seed_pixel_x + yx + 1, deltax, column_pitch, column)
-            )
-            distance_pos_x = np.abs(
-                particle_loc_x
-                - _hit_from_row_col(seed_pixel_x - yx, deltax, column_pitch, column)
-            )
-
-            if distance_pos_y**2 + distance_neg_x**2 < cluster_radius**2:
-                row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) + 1 + yx
-                col_hit = (
-                    int((particle_loc_x + deltax) / column_pitch + column / 2) - yx
-                )
-                if row_hit > 1 and row_hit < row:
-                    if col_hit > 1 and col_hit < column:
-                        hits_row.append(row_hit)
-                        hits_column.append(col_hit)
-
-            if distance_neg_y**2 + distance_pos_x**2 < cluster_radius**2:
-                row_hit = int((particle_loc_y + deltay) / row_pitch + row / 2) - yx
-                col_hit = (
-                    int((particle_loc_x + deltax) / column_pitch + column / 2) + yx + 1
-                )
-                if row_hit > 1 and row_hit < row:
-                    if col_hit > 1 and col_hit < column:
-                        hits_row.append(row_hit)
-                        hits_column.append(col_hit)
-
-    if len(hits_column) > 1:
-        res = list(
-            set([(hits_column[i], hits_row[i]) for i in range(len(hits_column))])
-        )
-        col_hits_output = [i[0] for i in res]
-        row_hits_output = [i[1] for i in res]
-    else:
-        col_hits_output = hits_column
-        row_hits_output = hits_row
-    return col_hits_output, row_hits_output
+                    if (x_test - particle_loc_x) ** 2 + (
+                        y_test - particle_loc_y
+                    ) ** 2 <= cluster_radius**2:
+                        if cols >= 1 and cols <= column:
+                            if rows >= 1 and rows <= row:
+                                hits_column.append(cols)
+                                hits_row.append(rows)
+            if len(hits_column) == 0:
+                hits_column.append(seed_pixel_x)
+                hits_row.append(seed_pixel_y)
+    return hits_column, hits_row
 
 
 def delete_outs(column, row, hit_table):

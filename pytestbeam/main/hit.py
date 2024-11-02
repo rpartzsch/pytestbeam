@@ -410,7 +410,7 @@ def landau_approx(
     rho: float,
     a: float,
 ):
-    """Approximation of the Landau distribution from to Behrens, S. E.; Melissinos, A.C. Univ. of Rochester Preprint UR-776 (1981)
+    """Approximation of the Landau distribution from Behrens, S. E.; Melissinos, A.C. Univ. of Rochester Preprint UR-776 (1981)
 
     Args:
         delta (list): List containing energy transvers
