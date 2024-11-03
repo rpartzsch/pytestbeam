@@ -35,10 +35,10 @@ def tracks(
     numb_events = beam["nmb_particles"]
 
     # Generating material budgets
-    Z = List()
-    A = List()
-    rho = List()
-    rad_length = List()
+    Z = []
+    A = []
+    rho = []
+    rad_length = []
     for material in materials:
         Z.append(material["Z"])
         A.append(material["A"])
@@ -46,12 +46,12 @@ def tracks(
         rad_length.append(material["rad_length"])
 
     # Generating duts
-    x_extend_pos = List()
-    x_extend_neg = List()
-    y_extend_pos = List()
-    y_extend_neg = List()
-    z_positions = List()
-    scatter_thickness = List()
+    x_extend_pos = []
+    x_extend_neg = []
+    y_extend_pos = []
+    y_extend_neg = []
+    z_positions = []
+    scatter_thickness = []
     for dut in devices:
         x_extend_pos.append(dut["column_pitch"] * dut["column"] / 2 + dut["delta_x"])
         x_extend_neg.append(-dut["column_pitch"] * dut["column"] / 2 + dut["delta_x"])
@@ -288,8 +288,8 @@ def highlander_fast_electrons(
         float: Mean scattering angle
     """
     z = -1
-    # p = np.sqrt(energy**2 - 0.511**2)
-    p = energy
+    p = np.sqrt(energy**2 - 0.511**2)
+    # p = energy
     beta = np.sqrt(1 - 1 / (1 + (energy / 0.511) ** 2))
     epsilon = thickness / rad_length
     return np.sqrt(

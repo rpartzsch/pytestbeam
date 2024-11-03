@@ -1,11 +1,22 @@
 from numba import njit
 import tables as tb
 import numpy as np
-from numba.typed import List
 from numba_progress import ProgressBar
 
 
-def calculate_device_hit(beam, devices, hit_data, names, folder, log):
+def calculate_device_hit(
+    beam: dict, devices: dict, hit_data: list, names: list, folder: str, log
+) -> None:
+    """Creates HDF5 output hit tables from particle table and device configuration.
+
+    Args:
+        beam (dict): Beam parameters (e.g. number of particles, beam profile...)
+        devices (dict): Device parameters (e.g. Device pixel pitch, location...)
+        hit_data (list): Contains particle hit information
+        names (list): Device names for logging and data saving
+        folder (str): output folder path
+        log (function): loggign function
+    """
     hits_descr = np.dtype(
         [
             ("event_number", "<i8"),
@@ -19,14 +30,14 @@ def calculate_device_hit(beam, devices, hit_data, names, folder, log):
     numb_events = beam["nmb_particles"]
     device_nmb = len(devices)
     # Generating device arrays
-    trigger = List()
-    deltay = List()
-    deltax = List()
-    device_row_pitch = List()
-    device_columns_pitch = List()
-    device_row = List()
-    device_columns = List()
-    z_positions = List()
+    trigger = []
+    deltay = []
+    deltax = []
+    device_row_pitch = []
+    device_columns_pitch = []
+    device_row = []
+    device_columns = []
+    z_positions = []
     for dut in devices:
         z_positions.append(dut["z_position"])
         device_columns.append(dut["column"])
@@ -43,6 +54,7 @@ def calculate_device_hit(beam, devices, hit_data, names, folder, log):
     log.info("Calculating particle hit positions")
     for dut in range(device_nmb):
         log.info("Hit positions of %s" % names[dut])
+        # Calculate untriggered device hits
         if trigger[dut] == False:
             hit_table = create_raw_hits(hits_descr, numb_events)
             with ProgressBar(total=numb_events) as progress:
@@ -58,10 +70,10 @@ def calculate_device_hit(beam, devices, hit_data, names, folder, log):
                     hit_data,
                     dut,
                     hit_table,
-                    trigger,
                     accepted_event,
                     progress,
                 )
+        # Calculate triggered device hits
         else:
             hit_table = create_raw_hits(hits_descr, np.sum(accepted_event))
             with ProgressBar(total=numb_events) as progress:
@@ -77,86 +89,54 @@ def calculate_device_hit(beam, devices, hit_data, names, folder, log):
                     hit_data,
                     dut,
                     hit_table,
-                    trigger,
                     accepted_event,
                     progress,
                 )
-        # table = delete_outs(device_columns[dut], device_row[dut], table)
         log.info("Saving Data...")
         create_hit_file(table, folder, names[dut])
 
 
-@njit
-def calc_position(
-    numb_events,
-    device_nmb,
-    row,
-    column,
-    column_pitch,
-    row_pitch,
-    deltax,
-    deltay,
-    hit_data,
-    dut,
-    hit_table,
-    trigger,
-    accepted_event,
-):
-    x = hit_data[3][dut::device_nmb]
-    y = hit_data[4][dut::device_nmb]
-    event = 0
-    for part in range(numb_events):
-        if accepted_event[part] == True:
-            if trigger[dut] == False:
-                hit_table["event_number"][part] = event + 1
-                hit_table["column"][part] = (
-                    (x[part] + deltax) / column_pitch + column / 2
-                ) + 1
-                hit_table["row"][part] = ((y[part] + deltay) / row_pitch + row / 2) + 1
-                event += 1
-            else:
-                hit_table["event_number"][event] = event + 1
-                hit_table["column"][event] = (
-                    (x[part] + deltax) / column_pitch + column / 2
-                ) + 1
-                hit_table["row"][event] = ((y[part] + deltay) / row_pitch + row / 2) + 1
-                event += 1
-        else:
-            if trigger[dut] == False:
-                hit_table["event_number"][part] = event + 1
-                hit_table["column"][part] = (
-                    (x[part] + deltax) / column_pitch + column / 2
-                ) + 1
-                hit_table["row"][part] = ((y[part] + deltay) / row_pitch + row / 2) + 1
-
-    return hit_table
-
-
 @njit(nogil=True)
 def calc_position_untriggered(
-    numb_events,
-    device_nmb,
-    row,
-    column,
-    column_pitch,
-    row_pitch,
-    deltax,
-    deltay,
-    hit_data,
-    dut,
-    hit_table,
-    trigger,
-    accepted_event,
+    numb_events: int,
+    device_nmb: int,
+    row: int,
+    column: int,
+    column_pitch: float,
+    row_pitch: float,
+    deltax: float,
+    deltay: float,
+    hit_data: list,
+    dut: int,
+    hit_table: np.array,
+    accepted_event: list,
     progress_proxy,
-):
+) -> np.array:
+    """Calculates column and row hits of a untriggered device from beam particle hits, using device information.
+    The clusters are calculated by approximating the charge cloud from diffusion and Coulomb expansion.
+
+    Args:
+        numb_events (int): Total number of particles
+        device_nmb (int): Total number of devices
+        row (int): Total number of device rows
+        column (int): Total number of device column
+        column_pitch (float): Column pitch size of the device in um
+        row_pitch (float): Row pitch size of the device in um
+        deltax (float): Displacement from ideal alignment of the device in x direction in um
+        deltay (float): Displacement from ideal alignment of the device in y direction in um
+        hit_data (list): Contains particle information
+        dut (int): Device number in beam direction
+        hit_table (np.array): Output hit table, containing device hit information
+        accepted_event (list): Containing information if particle is triggered
+        progress_proxy: Counter for proggress bar
+
+    Returns:
+        np.array: Output hit table
+    """
     x = hit_data[3][dut::device_nmb]
     y = hit_data[4][dut::device_nmb]
     event = 0
     start = 0
-    if column_pitch < row_pitch:
-        small_pixel = column_pitch
-    else:
-        small_pixel = row_pitch
     for part in range(numb_events):
         energy = hit_data[7][dut][part]
         cluster_radius = calc_cluster_radius(energy)
@@ -187,29 +167,45 @@ def calc_position_untriggered(
 
 @njit(nogil=True)
 def calc_position_triggered(
-    numb_events,
-    device_nmb,
-    row,
-    column,
-    column_pitch,
-    row_pitch,
-    deltax,
-    deltay,
-    hit_data,
-    dut,
-    hit_table,
-    trigger,
-    accepted_event,
+    numb_events: int,
+    device_nmb: int,
+    row: int,
+    column: int,
+    column_pitch: float,
+    row_pitch: float,
+    deltax: float,
+    deltay: float,
+    hit_data: list,
+    dut: int,
+    hit_table: np.array,
+    accepted_event: list,
     progress_proxy,
-):
+) -> np.array:
+    """Calculates column and row hits of a triggered device from beam particle hits, using device information.
+    The clusters are calculated by approximating the charge cloud from diffusion and Coulomb expansion.
+
+    Args:
+        numb_events (int): Total number of particles
+        device_nmb (int): Total number of devices
+        row (int): Total number of device rows
+        column (int): Total number of device column
+        column_pitch (float): Column pitch size of the device in um
+        row_pitch (float): Row pitch size of the device in um
+        deltax (float): Displacement from ideal alignment of the device in x direction in um
+        deltay (float): Displacement from ideal alignment of the device in y direction in um
+        hit_data (list): Contains particle information
+        dut (int): Device number in beam direction
+        hit_table (np.array): Output hit table, containing device hit information
+        accepted_event (list): Containing information if particle is triggered
+        progress_proxy: Counter for proggress bar
+
+    Returns:
+        np.array: Output hit table
+    """
     x = hit_data[3][dut::device_nmb]
     y = hit_data[4][dut::device_nmb]
     event = 0
     start = 0
-    if column_pitch < row_pitch:
-        small_pixel = column_pitch
-    else:
-        small_pixel = row_pitch
     for part in range(numb_events):
         if accepted_event[part] == True:
             energy = hit_data[7][dut][part]
@@ -238,7 +234,16 @@ def calc_position_triggered(
     return hit_table
 
 
-def create_raw_hits(raw_hits_descr, n_events):
+def create_raw_hits(raw_hits_descr: np.dtype, n_events: int) -> np.array:
+    """Create blank hit table
+
+    Args:
+        raw_hits_descr (np.dtype): features of the hit table
+        n_events (int): number of particles for size of table
+
+    Returns:
+        np.array: blank hit table
+    """
     return np.zeros(10 * n_events, dtype=raw_hits_descr)
 
 
@@ -266,16 +271,32 @@ def calc_cluster_radius(energy):
 
 @njit(nogil=True)
 def calc_cluster_hits(
-    column_pitch,
-    column,
-    deltax,
-    particle_loc_x,
-    row_pitch,
-    row,
-    deltay,
-    particle_loc_y,
-    cluster_radius,
-):
+    column_pitch: float,
+    column: int,
+    deltax: float,
+    particle_loc_x: float,
+    row_pitch: float,
+    row: int,
+    deltay: float,
+    particle_loc_y: float,
+    cluster_radius: float,
+) -> tuple[list, list]:
+    """Calculates cluster from particle hits and device parameters.
+
+    Args:
+        column_pitch (float): Column pitch size of the device in um
+        column (int): Total number of device column
+        deltax (float): Displacement from ideal alignment of the device in x direction in um
+        particle_loc_x (float): x position of the particle hit on the device in um
+        row_pitch (float): Row pitch size of the device in um
+        row (int): otal number of device rows
+        deltay (float): Displacement from ideal alignment of the device in y direction in um
+        particle_loc_y (float): y position of the particle hit on the device in um
+        cluster_radius (float): Radius of the charge cloud in um
+
+    Returns:
+        tuple[list, list]: pixel hits of the cluster in the form: [columns, rows]
+    """
     hits_column = []
     hits_row = []
     seed_pixel_x = _row_col_from_hit(particle_loc_x, deltax, column_pitch, column)
@@ -315,15 +336,17 @@ def calc_cluster_hits(
     return hits_column, hits_row
 
 
-def delete_outs(column, row, hit_table):
-    hit_table = np.delete(hit_table, np.where(hit_table["column"] > column))
-    hit_table = np.delete(hit_table, np.where(hit_table["row"] > row))
-    hit_table = np.delete(hit_table, np.where(hit_table["column"] < 1))
-    hit_table = np.delete(hit_table, np.where(hit_table["row"] < 1))
-    return hit_table
+def create_hit_file(hit_data: tb.table, folder: str, index: str) -> str:
+    """Creates outputs HDF5 file
 
+    Args:
+        hit_data (tb.table): data table
+        folder (str): output folder path
+        index (str): describing index as additional file name
 
-def create_hit_file(hit_data, folder, index):
+    Returns:
+        str: output path and file name
+    """
     hits_descr = np.dtype(
         [
             ("event_number", "<i8"),
@@ -351,10 +374,32 @@ def create_hit_file(hit_data, folder, index):
 
 
 @njit(nogil=True)
-def _row_col_from_hit(x, delta, pitch, number):
+def _row_col_from_hit(x: float, delta: float, pitch: float, number: int) -> int:
+    """Calculates the row or column hit from the particle position x or y
+
+    Args:
+        x (float): particle position
+        delta (float): displacement of the device
+        pitch (float): pitch of the columns or rows
+        number (int): total number of rows or columns
+
+    Returns:
+        int: column or row index
+    """
     return int((x + delta) / pitch + number / 2) + 1
 
 
 @njit(nogil=True)
-def _hit_from_row_col(col_row, delta, pitch, number):
+def _hit_from_row_col(col_row: int, delta: float, pitch: float, number: int) -> float:
+    """Calculates the middle position of a pixel row or column
+
+    Args:
+        col_row (int): column or row index
+        delta (float): displacement of the device
+        pitch (float): pitch of the columns or rows
+        number (int): total number of rows or columns
+
+    Returns:
+        float: middle position of the pixel in x or y
+    """
     return pitch * (col_row - number / 2 - 1) - delta + pitch / 2
