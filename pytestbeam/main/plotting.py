@@ -60,6 +60,7 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     angle_dispersion = plot_angle_dispersion(
         names, hit_tables, log, len(names), nevents, devices
     )
+    clusters = plot_cluster(device_2, log, names[-1])
     time = plot_times_distribution(names, hit_tables, log, nevents)
     x_angles_last = plot_xangle_distribution(
         names, hit_tables, log, len(names), nevents
@@ -80,6 +81,7 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     pdf_pages.savefig(corr)
     pdf_pages.savefig(mean_energy)
     pdf_pages.savefig(angle_dispersion)
+    pdf_pages.savefig(clusters)
     pdf_pages.savefig(time)
     pdf_pages.savefig(x_first)
     pdf_pages.savefig(y_first)
@@ -141,9 +143,9 @@ def plot_events(devices, names, hit_tables, event, log):
             i += 1
 
     # Set labels and title
-    ax.set_xlabel("x [$\mu$m]")
-    ax.set_ylabel("z [$\mu$m]")
-    ax.set_zlabel("y [$\mu$m]")
+    ax.set_xlabel(r"x [$\mu$m]")
+    ax.set_ylabel(r"z [$\mu$m]")
+    ax.set_zlabel(r"y [$\mu$m]")
     ax.set_title("Example event plot")
     ax.legend()
 
@@ -305,12 +307,12 @@ def plot_times_distribution(names, hit_tables, log, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$s\n$\sigma$ = %.6f $\mu$s"
+        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$s\n$\sigma$ = %.6f $\mu$s"
         % (popt[0], popt[1], popt[2]),
         color=lightgreen,
         linewidth=3,
     )
-    ax.set_xlabel("Time [$\mu$s]")
+    ax.set_xlabel(r"Time [$\mu$s]")
     ax.set_ylabel("#")
     ax.legend()
     ax.set_title("Time distribution")
@@ -343,7 +345,7 @@ def plot_xangle_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
+        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
         % (popt[0], popt[1], popt[2]),
         color=lightgreen,
         linewidth=3,
@@ -381,7 +383,7 @@ def plot_yangle_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
+        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
         % (popt[0], popt[1], popt[2]),
         color=lightgreen,
         linewidth=3,
@@ -419,12 +421,12 @@ def plot_x_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
+        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
         % (popt[0], popt[1], popt[2]),
         color=lightgreen,
         linewidth=3,
     )
-    ax.set_xlabel("x [$\mu$m]")
+    ax.set_xlabel(r"x [$\mu$m]")
     ax.set_ylabel("#")
     ax.set_title("x distribution after %s" % names[i])
     ax.legend()
@@ -457,12 +459,12 @@ def plot_y_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
+        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
         % (popt[0], popt[1], popt[2]),
         color=lightgreen,
         linewidth=3,
     )
-    ax.set_xlabel("y [$\mu$m]")
+    ax.set_xlabel(r"y [$\mu$m]")
     ax.set_ylabel("#")
     ax.set_title("y distribution after %s" % names[i])
     ax.legend()
@@ -573,6 +575,44 @@ def plot_correlation(
     cbar = plt.colorbar(im_row, ax=ax[1], shrink=0.5)
     cbar.set_label("#")
     fig.suptitle("Correlation first-last device, 50k events", fontsize=16)
+    return fig
+
+
+def plot_cluster(path_in_device, log, device_name="ITkPix"):
+
+    log.info("Plotting Clusters")
+    with tb.open_file(path_in_device, "r") as file:
+        table = file.root.Hits[:]
+        device = np.copy(table)
+
+    fig, ax = plt.subplots(3, 3, figsize=(12, 12), constrained_layout=True)
+
+    for i in range(3):
+        for j in range(3):
+            eventnumber = np.random.choice(
+                device[np.where(np.diff(device["event_number"]) == 0)]
+            )["event_number"]
+            event = device[np.where(device["event_number"] == eventnumber)]
+
+            x = np.arange(np.min(event["column"]), np.max(event["column"] + 1))
+            y = np.arange(np.min(event["row"]), np.max(event["row"] + 1))
+
+            cluster_hist = ax[i, j].hist2d(
+                event["column"],
+                event["row"],
+                bins=[len(x), len(y)],
+                weights=(event["charge"]),
+                cmap=colormap,
+            )
+
+            ax[i, j].grid()
+            ax[i, j].set_xlabel("Column")
+            ax[i, j].set_ylabel("Row")
+            ax[i, j].set_xticks(x)
+            ax[i, j].set_yticks(y)
+            cbar = plt.colorbar(cluster_hist[3], ax=ax[i, j])
+            cbar.set_label("Charge")
+    fig.suptitle("Example Clusters %s" % device_name, fontsize=16)
     return fig
 
 
