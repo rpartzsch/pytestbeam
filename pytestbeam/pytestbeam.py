@@ -1,8 +1,9 @@
 import numpy as np
+import yaml
+
 import main.hit as hit
 import main.device as device
 from main.plotting import plot_default
-import yaml
 import main.logger as logger
 
 if __name__ == "__main__":
@@ -15,9 +16,9 @@ if __name__ == "__main__":
     with open("material.yml", "r") as file:
         material = yaml.full_load(file)
 
-    folder = setup["data_output"]
-    if folder == None:
-        folder = "output_data/"
+    FOLDER = setup["data_output"]
+    if FOLDER is None:
+        FOLDER = "output_data/"
 
     device_material = [
         setup["deviceses"][dev]["material"] for dev in setup["deviceses"]
@@ -31,8 +32,8 @@ if __name__ == "__main__":
     hit_tables = hit.tracks(beam, devices, materials, log)
     if setup["saving_tracks"]:
         log.info("Saving tracks this takes forever...")
-        hit.create_output_tracks(hit_tables, folder)
-    device.calculate_device_hit(beam, devices, hit_tables, names, folder, log)
+        hit.create_output_tracks(hit_tables, FOLDER)
+    device.calculate_device_hit(beam, devices, hit_tables, names, FOLDER, log)
 
     if setup["plotting"]:
-        plot_default(devices, names, hit_tables, np.arange(1, 6, 1), folder, log)
+        plot_default(devices, names, hit_tables, np.arange(1, 6, 1), FOLDER, log)
