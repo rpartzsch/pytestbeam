@@ -38,6 +38,7 @@ def calculate_device_hit(
     device_row = []
     device_columns = []
     z_positions = []
+    thresholds = []
     for dut in devices:
         z_positions.append(dut["z_position"])
         device_columns.append(dut["column"])
@@ -47,6 +48,7 @@ def calculate_device_hit(
         deltax.append(dut["delta_x"])
         deltay.append(dut["delta_y"])
         trigger.append(dut["trigger"] == "triggered")
+        thresholds.append(dut["threshold"] / (dut["row_pitch"] * dut["column_pitch"]))
 
     # Trigger and untriggered device hack
     accepted_event = np.random.uniform(0, 1, numb_events) < 0.7
@@ -67,6 +69,7 @@ def calculate_device_hit(
                     device_row_pitch[dut],
                     deltax[dut],
                     deltay[dut],
+                    thresholds[dut],
                     hit_data,
                     dut,
                     hit_table,
@@ -86,6 +89,7 @@ def calculate_device_hit(
                     device_row_pitch[dut],
                     deltax[dut],
                     deltay[dut],
+                    thresholds[dut],
                     hit_data,
                     dut,
                     hit_table,
@@ -106,6 +110,7 @@ def calc_position_untriggered(
     row_pitch: float,
     deltax: float,
     deltay: float,
+    threshold: float | int,
     hit_data: list,
     dut: int,
     hit_table: np.array,
@@ -140,7 +145,7 @@ def calc_position_untriggered(
     for part in range(numb_events):
         energy = hit_data[7][dut][part]
         cluster_radius = calc_cluster_radius(energy)
-        column_hits, row_hits = calc_cluster_hits(
+        column_hits, row_hits, charges = calc_cluster_hits(
             column_pitch,
             column,
             deltax,
@@ -150,6 +155,8 @@ def calc_position_untriggered(
             deltay,
             y[part],
             cluster_radius,
+            threshold,
+            energy,
         )
         cluster_size = len(column_hits)
         if cluster_size > 0:
@@ -157,6 +164,7 @@ def calc_position_untriggered(
             hit_table["event_number"][start:stop] = event + 1
             hit_table["column"][start:stop] = column_hits
             hit_table["row"][start:stop] = row_hits
+            hit_table["charge"][start:stop] = charges
             start = stop
         if accepted_event[part] == True:
             event += 1
@@ -175,6 +183,7 @@ def calc_position_triggered(
     row_pitch: float,
     deltax: float,
     deltay: float,
+    threshold: float | int,
     hit_data: list,
     dut: int,
     hit_table: np.array,
@@ -210,7 +219,7 @@ def calc_position_triggered(
         if accepted_event[part] == True:
             energy = hit_data[7][dut][part]
             cluster_radius = calc_cluster_radius(energy)
-            column_hits, row_hits = calc_cluster_hits(
+            column_hits, row_hits, charges = calc_cluster_hits(
                 column_pitch,
                 column,
                 deltax,
@@ -220,6 +229,8 @@ def calc_position_triggered(
                 deltay,
                 y[part],
                 cluster_radius,
+                threshold,
+                energy,
             )
             cluster_size = len(column_hits)
             if cluster_size > 0:
@@ -227,6 +238,7 @@ def calc_position_triggered(
                 hit_table["event_number"][start:stop] = event + 1
                 hit_table["column"][start:stop] = column_hits
                 hit_table["row"][start:stop] = row_hits
+                hit_table["charge"][start:stop] = charges
                 start = stop
             event += 1
         progress_proxy.update(1)
@@ -280,6 +292,8 @@ def calc_cluster_hits(
     deltay: float,
     particle_loc_y: float,
     cluster_radius: float,
+    threshold: int | float,
+    energy: float,
 ) -> tuple[list, list]:
     """Calculates cluster from particle hits and device parameters.
 
@@ -299,8 +313,10 @@ def calc_cluster_hits(
     """
     hits_column = []
     hits_row = []
+    charges = []
     seed_pixel_x = _row_col_from_hit(particle_loc_x, deltax, column_pitch, column)
     seed_pixel_y = _row_col_from_hit(particle_loc_y, deltay, row_pitch, row)
+    seed_charge = calc_charge(0, 0, energy, cluster_radius)
     if seed_pixel_x >= 1 and seed_pixel_x <= column:
         if seed_pixel_y >= 1 and seed_pixel_y <= row:
             col_max = _row_col_from_hit(
@@ -323,17 +339,26 @@ def calc_cluster_hits(
                     y_test = _hit_from_row_col(
                         rows, delta=deltay, pitch=row_pitch, number=row
                     )
-                    if (x_test - particle_loc_x) ** 2 + (
-                        y_test - particle_loc_y
-                    ) ** 2 <= cluster_radius**2:
-                        if cols >= 1 and cols <= column:
-                            if rows >= 1 and rows <= row:
-                                hits_column.append(cols)
-                                hits_row.append(rows)
-            if len(hits_column) == 0:
+                    charge = calc_charge(
+                        x_test - particle_loc_x,
+                        y_test - particle_loc_y,
+                        energy,
+                        cluster_radius,
+                    )
+                    if charge >= threshold:
+                        if (x_test - particle_loc_x) ** 2 + (
+                            y_test - particle_loc_y
+                        ) ** 2 <= cluster_radius**2:
+                            if cols >= 1 and cols <= column:
+                                if rows >= 1 and rows <= row:
+                                    hits_column.append(cols)
+                                    hits_row.append(rows)
+                                    charges.append(charge)
+            if len(hits_column) == 0 and charge >= threshold:
                 hits_column.append(seed_pixel_x)
                 hits_row.append(seed_pixel_y)
-    return hits_column, hits_row
+                charges.append(seed_charge)
+    return hits_column, hits_row, charges
 
 
 def create_hit_file(hit_data: tb.table, folder: str, index: str) -> str:
@@ -403,3 +428,16 @@ def _hit_from_row_col(col_row: int, delta: float, pitch: float, number: int) -> 
         float: middle position of the pixel in x or y
     """
     return pitch * (col_row - number / 2 - 1) - delta + pitch / 2
+
+
+@njit(nogil=True)
+def gauss(x, mu, sigma):
+    """classic Gaussian function"""
+    return 1 / (sigma * np.sqrt(2 * np.pi)) * np.exp(-((x - mu) ** 2) / (2 * sigma**2))
+
+
+@njit(nogil=True)
+def calc_charge(x, y, energy, cluster_radius):
+    E = energy * 1e6  # eV
+    Q_tot = E / 3.6
+    return Q_tot * gauss(x, 0, cluster_radius) * gauss(y, 0, cluster_radius)
