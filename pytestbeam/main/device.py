@@ -48,7 +48,7 @@ def calculate_device_hit(
         deltax.append(dut["delta_x"])
         deltay.append(dut["delta_y"])
         trigger.append(dut["trigger"] == "triggered")
-        thresholds.append(dut["threshold"] / (dut["row_pitch"] * dut["column_pitch"]))
+        thresholds.append(dut["threshold"])
 
     # Trigger and untriggered device hack
     accepted_event = np.random.uniform(0, 1, numb_events) < 0.7
@@ -339,11 +339,15 @@ def calc_cluster_hits(
                     y_test = _hit_from_row_col(
                         rows, delta=deltay, pitch=row_pitch, number=row
                     )
-                    charge = calc_charge(
-                        x_test - particle_loc_x,
-                        y_test - particle_loc_y,
-                        energy,
-                        cluster_radius,
+                    charge = (
+                        calc_charge(
+                            x_test - particle_loc_x,
+                            y_test - particle_loc_y,
+                            energy,
+                            cluster_radius,
+                        )
+                        * column_pitch
+                        * row_pitch
                     )
                     if charge >= threshold:
                         if (x_test - particle_loc_x) ** 2 + (

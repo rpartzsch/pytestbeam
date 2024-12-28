@@ -307,8 +307,9 @@ def plot_times_distribution(names, hit_tables, log, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$s\n$\sigma$ = %.6f $\mu$s"
-        % (popt[0], popt[1], popt[2]),
+        # label=f"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$s\n$\sigma$ = %.6f $\mu$s"
+        # % (popt[0], popt[1], popt[2]),
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} \n \u03C3 = {popt[2]: .6f}",
         color=lightgreen,
         linewidth=3,
     )
@@ -345,8 +346,9 @@ def plot_xangle_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
-        % (popt[0], popt[1], popt[2]),
+        # label=f"Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
+        # % (popt[0], popt[1], popt[2]),
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} rad\n \u03C3 = {popt[2]: .6f} rad",
         color=lightgreen,
         linewidth=3,
     )
@@ -383,8 +385,9 @@ def plot_yangle_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
-        % (popt[0], popt[1], popt[2]),
+        # label=f"Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} rad\n \u03C3 = {popt[2]: .6f} rad",
+        # % (popt[0], popt[1], popt[2]),
         color=lightgreen,
         linewidth=3,
     )
@@ -421,8 +424,9 @@ def plot_x_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
-        % (popt[0], popt[1], popt[2]),
+        # label=f"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
+        # % (popt[0], popt[1], popt[2]),
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} \n \u03C3 = {popt[2]: .6f}",
         color=lightgreen,
         linewidth=3,
     )
@@ -459,8 +463,9 @@ def plot_y_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label=r"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
-        % (popt[0], popt[1], popt[2]),
+        # label="Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
+        # % (popt[0], popt[1], popt[2]),
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} \n \u03C3 = {popt[2]: .6f}",
         color=lightgreen,
         linewidth=3,
     )
@@ -610,8 +615,9 @@ def plot_cluster(path_in_device, log, device_name="ITkPix"):
             ax[i, j].set_ylabel("Row")
             ax[i, j].set_xticks(x)
             ax[i, j].set_yticks(y)
+            ax[i, j].set_title(f"Total charge {np.sum(event["charge"]): .0f} e⁻")
             cbar = plt.colorbar(cluster_hist[3], ax=ax[i, j])
-            cbar.set_label("Charge")
+            cbar.set_label("Charge [e⁻]")
     fig.suptitle("Example Clusters %s" % device_name, fontsize=16)
     return fig
 
