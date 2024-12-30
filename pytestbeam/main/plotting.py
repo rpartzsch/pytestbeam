@@ -75,7 +75,6 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     y_last = plot_y_distribution(names, hit_tables, log, len(names), nevents)
     x_first = plot_x_distribution(names, hit_tables, log, 1, nevents)
     y_first = plot_y_distribution(names, hit_tables, log, 1, nevents)
-    
 
     pdf_pages = PdfPages(folder + "output_plots.pdf")
     pdf_pages.savefig(events)
@@ -634,11 +633,13 @@ def plot_charge_dist(path_in_device, log, device_name="ITkPix"):
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 12), constrained_layout=True)
 
-    charge = _calc_charge_distr(device['event_number'][:10000], device['charge'][:10000])
-    
-    charge = charge[charge>0]
-    charge = charge[charge<100000]
-    
+    charge = _calc_charge_distr(
+        device["event_number"][:10000], device["charge"][:10000]
+    )
+
+    charge = charge[charge > 0]
+    charge = charge[charge < 1e6]
+
     ax.hist(
         charge,
         bins=50,
@@ -651,6 +652,7 @@ def plot_charge_dist(path_in_device, log, device_name="ITkPix"):
     ax.set_title(f"Collected Charge per Event in {device_name}")
     return fig
 
+
 @njit
 def centers_from_borders_numba(b):
     centers = np.empty(b.size - 1, np.float64)
@@ -658,12 +660,14 @@ def centers_from_borders_numba(b):
         centers[idx] = b[idx] + (b[idx + 1] - b[idx]) / 2
     return centers
 
+
 @njit
 def _calc_charge_distr(event_number, charges):
     charge = np.zeros(np.max(event_number))
     for i in range(np.max(event_number)):
         charge[i] = np.sum(charges[np.where(event_number == i)])
     return charge
+
 
 def _eventloop(device_1, device_2, x_hist, y_hist):
     dev_1_ev = device_1["event_number"]

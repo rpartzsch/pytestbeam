@@ -39,6 +39,7 @@ def calculate_device_hit(
     device_columns = []
     z_positions = []
     thresholds = []
+    thickness = []
     for dut in devices:
         z_positions.append(dut["z_position"])
         device_columns.append(dut["column"])
@@ -49,6 +50,7 @@ def calculate_device_hit(
         deltay.append(dut["delta_y"])
         trigger.append(dut["trigger"] == "triggered")
         thresholds.append(dut["threshold"])
+        thickness.append(dut["thickness"])
 
     # Trigger and untriggered device hack
     accepted_event = np.random.uniform(0, 1, numb_events) < 0.7
@@ -70,6 +72,7 @@ def calculate_device_hit(
                 device_columns[dut],
                 device_columns_pitch[dut],
                 device_row_pitch[dut],
+                thickness[dut],
                 deltax[dut],
                 deltay[dut],
                 thresholds[dut],
@@ -79,10 +82,11 @@ def calculate_device_hit(
                 accepted_event,
                 trigger[dut],
                 progress,
-                )
-            
+            )
+
         log.info("Saving Data...")
         create_hit_file(table, folder, names[dut])
+
 
 @njit(nogil=True)
 def calc_position(
@@ -92,6 +96,7 @@ def calc_position(
     column: int,
     column_pitch: float,
     row_pitch: float,
+    thickness: int | float,
     deltax: float,
     deltay: float,
     threshold: float | int,
@@ -145,6 +150,7 @@ def calc_position(
                 cluster_radius_x,
                 cluster_radius_y,
                 threshold,
+                thickness,
                 energy,
             )
             cluster_size = len(column_hits)
@@ -160,6 +166,7 @@ def calc_position(
         progress_proxy.update(1)
     hit_table = hit_table[0:stop]
     return hit_table
+
 
 def create_raw_hits(raw_hits_descr: np.dtype, n_events: int) -> np.array:
     """Create blank hit table
@@ -209,6 +216,7 @@ def calc_cluster_hits(
     cluster_radius_x: float,
     cluster_radius_y: float,
     threshold: int | float,
+    thickness: int | float,
     energy: float,
 ) -> tuple[list, list]:
     """Calculates cluster from particle hits and device parameters.
@@ -232,7 +240,16 @@ def calc_cluster_hits(
     charges = []
     seed_pixel_x = _row_col_from_hit(particle_loc_x, deltax, column_pitch, column)
     seed_pixel_y = _row_col_from_hit(particle_loc_y, deltay, row_pitch, row)
-    seed_charge = calc_charge(0, 0, energy, cluster_radius_x, cluster_radius_y)
+    seed_charge = calc_charge(
+        0,
+        0,
+        energy,
+        cluster_radius_x,
+        cluster_radius_y,
+        row_pitch,
+        column_pitch,
+        thickness,
+    )
     if seed_pixel_x >= 1 and seed_pixel_x <= column:
         if seed_pixel_y >= 1 and seed_pixel_y <= row:
             col_max = _row_col_from_hit(
@@ -261,7 +278,10 @@ def calc_cluster_hits(
                             y_test - particle_loc_y,
                             energy,
                             cluster_radius_x,
-                            cluster_radius_y
+                            cluster_radius_y,
+                            row_pitch,
+                            column_pitch,
+                            thickness,
                         )
                         * column_pitch
                         * row_pitch
@@ -269,7 +289,7 @@ def calc_cluster_hits(
                     if charge >= threshold:
                         if (x_test - particle_loc_x) ** 2 / cluster_radius_x**2 + (
                             y_test - particle_loc_y
-                        ) ** 2 / cluster_radius_y**2 <=  1:
+                        ) ** 2 / cluster_radius_y**2 <= 1:
                             if cols >= 1 and cols <= column:
                                 if rows >= 1 and rows <= row:
                                     hits_column.append(cols)
@@ -358,7 +378,32 @@ def gauss(x, mu, sigma):
 
 
 @njit(nogil=True)
-def calc_charge(x, y, energy, cluster_radius_x, cluster_radius_y):
+def calc_charge(
+    x,
+    y,
+    energy,
+    cluster_radius_x,
+    cluster_radius_y,
+    row_pitch,
+    column_pitch,
+    thickness,
+    noise=True,
+):
     E = energy * 1e6  # eV
     Q_tot = E / 3.6
-    return Q_tot * gauss(x, 0, cluster_radius_x) * gauss(y, 0, cluster_radius_y)
+    if noise:
+        noise = draw_noise_charge(300, row_pitch, column_pitch, thickness)
+    else:
+        noise = 0
+    return Q_tot * gauss(x, 0, cluster_radius_x) * gauss(y, 0, cluster_radius_y) + noise
+
+
+@njit
+def draw_noise_charge(temperature, row_pitch, column_pitch, thickness):
+    k_b = 1.38 * 10 ** (-23)  # J/K
+    e = 1.602 * 10 ** (-19)  # C
+    eps_0 = 8.854 * 10 ** (-12)  # As/Vm
+    eps_r = 11.7
+    C = eps_0 * eps_r * row_pitch * column_pitch / thickness * 1e-6
+    sigma_kbt = np.sqrt(k_b * temperature * C) / e
+    return np.random.normal(0, sigma_kbt)
