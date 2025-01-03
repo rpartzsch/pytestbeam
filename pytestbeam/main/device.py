@@ -218,7 +218,7 @@ def calc_cluster_hits(
     threshold: int | float,
     thickness: int | float,
     energy: float,
-) -> tuple[list, list]:
+) -> tuple[list, list, list]:
     """Calculates cluster from particle hits and device parameters.
 
     Args:
@@ -233,7 +233,7 @@ def calc_cluster_hits(
         cluster_radius (float): Radius of the charge cloud in um
 
     Returns:
-        tuple[list, list]: pixel hits of the cluster in the form: [columns, rows]
+        tuple[list, list, list]: pixel hits of the cluster in the form: [columns, rows, charges]
     """
     hits_column = []
     hits_row = []
@@ -287,14 +287,15 @@ def calc_cluster_hits(
                         * row_pitch
                     )
                     if charge >= threshold:
-                        if (x_test - particle_loc_x) ** 2 / cluster_radius_x**2 + (
-                            y_test - particle_loc_y
-                        ) ** 2 / cluster_radius_y**2 <= 1:
-                            if cols >= 1 and cols <= column:
-                                if rows >= 1 and rows <= row:
-                                    hits_column.append(cols)
-                                    hits_row.append(rows)
-                                    charges.append(charge)
+                        if cluster_radius_x > 0 and cluster_radius_y > 0:
+                            if (x_test - particle_loc_x) ** 2 / cluster_radius_x**2 + (
+                                y_test - particle_loc_y
+                            ) ** 2 / cluster_radius_y**2 <= 1:
+                                if cols >= 1 and cols <= column:
+                                    if rows >= 1 and rows <= row:
+                                        hits_column.append(cols)
+                                        hits_row.append(rows)
+                                        charges.append(charge)
             if len(hits_column) == 0 and seed_charge >= threshold:
                 hits_column.append(seed_pixel_x)
                 hits_row.append(seed_pixel_y)
@@ -395,6 +396,10 @@ def calc_charge(
         noise = draw_noise_charge(300, row_pitch, column_pitch, thickness)
     else:
         noise = 0
+    if cluster_radius_x < 1:
+        cluster_radius_x = 1 / np.sqrt(2 * np.pi)
+    if cluster_radius_y < 1:
+        cluster_radius_y = 1 / np.sqrt(2 * np.pi)
     return Q_tot * gauss(x, 0, cluster_radius_x) * gauss(y, 0, cluster_radius_y) + noise
 
 

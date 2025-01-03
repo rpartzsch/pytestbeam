@@ -20,13 +20,11 @@ if __name__ == "__main__":
     if FOLDER is None:
         FOLDER = "output_data/"
 
-    device_material = [
-        setup["deviceses"][dev]["material"] for dev in setup["deviceses"]
-    ]
+    device_material = [setup["devices"][dev]["material"] for dev in setup["devices"]]
     materials = [material[device_material[i]] for i in range(len(device_material))]
-    names = [dev for dev in setup["deviceses"]]
+    names = [dev for dev in setup["devices"]]
 
-    devices = [setup["deviceses"][dev] for dev in setup["deviceses"]]
+    devices = [setup["devices"][dev] for dev in setup["devices"]]
     beam = setup["beam"]
 
     hit_tables = hit.tracks(beam, devices, materials, log)

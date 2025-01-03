@@ -638,7 +638,7 @@ def plot_charge_dist(path_in_device, log, device_name="ITkPix"):
     )
 
     charge = charge[charge > 0]
-    charge = charge[charge < 1e6]
+    charge = charge[charge < 0.1e6]
 
     ax.hist(
         charge,
