@@ -149,7 +149,7 @@ def calc_position(
                 y[part],
                 cluster_radius_x,
                 cluster_radius_y,
-                threshold,
+                threshold * 1e-3,
                 thickness,
                 energy,
             )
@@ -392,6 +392,7 @@ def calc_charge(
 ):
     E = energy * 1e6  # eV
     Q_tot = E / 3.6
+
     if noise:
         noise = draw_noise_charge(300, row_pitch, column_pitch, thickness)
     else:
@@ -400,7 +401,8 @@ def calc_charge(
         cluster_radius_x = 1 / np.sqrt(2 * np.pi)
     if cluster_radius_y < 1:
         cluster_radius_y = 1 / np.sqrt(2 * np.pi)
-    return Q_tot * gauss(x, 0, cluster_radius_x) * gauss(y, 0, cluster_radius_y) + noise
+    signal = Q_tot * (gauss(x, 0, cluster_radius_x) * gauss(y, 0, cluster_radius_y))
+    return (signal + noise) * 1e-3
 
 
 @njit
@@ -411,4 +413,5 @@ def draw_noise_charge(temperature, row_pitch, column_pitch, thickness):
     eps_r = 11.7
     C = eps_0 * eps_r * row_pitch * column_pitch / thickness * 1e-6
     sigma_kbt = np.sqrt(k_b * temperature * C) / e
-    return np.random.normal(0, sigma_kbt)
+    noise = np.random.normal(0, sigma_kbt)
+    return noise

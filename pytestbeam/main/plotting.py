@@ -3,6 +3,7 @@ import tables as tb
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from numba_progress import ProgressBar
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy import optimize
 import itertools
@@ -51,8 +52,6 @@ def plot_default(devices, names, hit_tables, event, folder, log):
         names[0],
         names[-1],
         log,
-        max_cols=(devices[0]["column"] + 1, devices[-1]["column"] + 1),
-        max_rows=(devices[0]["row"] + 1, devices[-1]["row"] + 1),
     )
     mean_energy = plot_mean_energy_distribution(
         devices, names, hit_tables, log, nevents
@@ -490,12 +489,13 @@ def plot_correlation(
     names_1,
     names_2,
     log,
-    max_cols=(512, 512),
-    max_rows=(512, 512),
+    max_cols=[None, None],
+    max_rows=[None, None],
     offset=0,
-    event_size=50000,
+    event_size=None,
     event_numb_shift=0,
 ):
+
     log.info("Plotting correlation")
 
     if event_size == None:
@@ -539,12 +539,37 @@ def plot_correlation(
         np.where(np.isin(device_y["event_number"], device_x["event_number"]) == False),
     )
 
-    x_corr_hist, y_corr_hist = (
-        np.zeros(max_cols, dtype=np.int32),
-        np.zeros(max_rows, dtype=np.int32),
+    device_x_columns = device_x["column"]
+    device_y_columns = device_y["column"]
+    device_x_rows = device_x["row"]
+    device_y_rows = device_y["row"]
+
+    if max_cols[0] == None:
+        max_cols[0] = np.max(device_x_columns) + 1
+        max_cols[1] = np.max(device_y_columns) + 1
+        max_rows[0] = np.max(device_x_rows) + 1
+        max_rows[1] = np.max(device_y_rows) + 1
+
+    x_corr_hist, y_corr_hist = np.zeros(max_cols, dtype=np.int32), np.zeros(
+        max_rows, dtype=np.int32
     )
 
-    buffer_x, buffer_y = _eventloop(device_x, device_y, x_corr_hist, y_corr_hist)
+    total_numb_events = np.max(device_x["event_number"]) - np.min(
+        device_x["event_number"]
+    )
+
+    with ProgressBar(total=total_numb_events) as progress:
+        buffer_x, buffer_y = _eventloop_fast(
+            device_x["event_number"],
+            device_x_rows,
+            device_x_columns,
+            device_y["event_number"],
+            device_y_rows,
+            device_y_columns,
+            x_corr_hist,
+            y_corr_hist,
+            progress,
+        )
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 12), constrained_layout=True)
     # fig.tight_layout()
@@ -563,6 +588,8 @@ def plot_correlation(
     ax[0].grid()
     ax[0].set_xlabel("Column %s" % names_2)
     ax[0].set_ylabel("Column %s" % names_1)
+    ax[0].set_xlim(np.min(device_y_columns) - 1)
+    ax[0].set_ylim(np.min(device_x_columns) - 1)
     # ax[0].colorbar(im_col, ax=ax[0])
     cbar = plt.colorbar(im_col, ax=ax[0], shrink=0.5)
     cbar.set_label("#")
@@ -579,6 +606,8 @@ def plot_correlation(
     ax[1].grid()
     ax[1].set_xlabel("Row %s" % names_2)
     ax[1].set_ylabel("Row %s" % names_1)
+    ax[1].set_xlim(np.min(device_y_rows) - 1)
+    ax[1].set_ylim(np.min(device_x_rows) - 1)
     cbar = plt.colorbar(im_row, ax=ax[1], shrink=0.5)
     cbar.set_label("#")
     fig.suptitle("Correlation first-last device, 50k events", fontsize=16)
@@ -612,14 +641,14 @@ def plot_cluster(path_in_device, log, device_name="ITkPix"):
                 cmap=colormap,
             )
 
-            ax[i, j].grid()
+            # ax[i, j].grid()
             ax[i, j].set_xlabel("Column")
             ax[i, j].set_ylabel("Row")
             ax[i, j].set_xticks(x)
             ax[i, j].set_yticks(y)
-            ax[i, j].set_title(f"Total charge {np.sum(event["charge"]): .0f} e⁻")
+            ax[i, j].set_title(f"Total charge {np.sum(event["charge"]): .0f} ke⁻")
             cbar = plt.colorbar(cluster_hist[3], ax=ax[i, j])
-            cbar.set_label("Charge [e⁻]")
+            cbar.set_label("Charge [ke⁻]")
     fig.suptitle("Example Clusters %s" % device_name, fontsize=16)
     return fig
 
@@ -638,7 +667,7 @@ def plot_charge_dist(path_in_device, log, device_name="ITkPix"):
     )
 
     charge = charge[charge > 0]
-    charge = charge[charge < 0.1e6]
+    charge = charge[charge < 0.1e3]
 
     ax.hist(
         charge,
@@ -647,7 +676,7 @@ def plot_charge_dist(path_in_device, log, device_name="ITkPix"):
     )
 
     ax.grid()
-    ax.set_xlabel("Charge [e⁻]")
+    ax.set_xlabel("Charge [ke⁻]")
     ax.set_ylabel("#")
     ax.set_title(f"Collected Charge per Event in {device_name}")
     return fig
@@ -696,3 +725,40 @@ def _eventloop(device_1, device_2, x_hist, y_hist):
                 y_hist[comb_row[m][0], comb_row[m][1]] += 1
 
     return x_hist, y_hist
+
+
+@njit(nogil=True)
+def _eventloop_fast(
+    dev_1_ev,
+    dev_1_row,
+    dev_1_column,
+    dev_2_ev,
+    dev_2_row,
+    dev_2_column,
+    x_corr_hist,
+    y_corr_hist,
+    progress_proxy,
+):
+    index_1 = 0
+    index_2 = 0
+    j = 0
+    k = 0
+
+    for i in range(np.min(dev_1_ev), np.max(dev_1_ev)):
+        index_1 += j
+        index_2 += k
+        j = 0
+        while True:
+            k = 0
+            while True:
+                x_corr_hist[dev_1_column[j + index_1], dev_2_column[k + index_2]] += 1
+                y_corr_hist[dev_1_row[j + index_1], dev_2_row[k + index_2]] += 1
+                if dev_2_ev[k + index_2] > i:
+                    break
+                k += 1
+            if dev_1_ev[j + index_1] > i:
+                break
+            j += 1
+        progress_proxy.update(1)
+
+    return x_corr_hist, y_corr_hist

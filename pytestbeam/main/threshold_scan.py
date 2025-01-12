@@ -35,37 +35,48 @@ yellowish = cm.naviaS.resampled(8)(3)
 
 
 def create_injection_array(low, high, bins):
-    return np.arange(low, high, (high - low)/bins)
+    return np.arange(low, high, (high - low) / bins)
 
-@njit
-def create_hits(inj_array, numb_inj, 
-                column_pitch, row_pitch, threshold, 
-                thickness, 
-                column_numb, row_numb, column=0, row=0,):
+
+# @njit
+def create_hits(
+    inj_array,
+    numb_inj,
+    column_pitch,
+    row_pitch,
+    threshold,
+    thickness,
+    column_numb,
+    row_numb,
+    column=0,
+    row=0,
+):
     inj_hits = np.zeros(np.shape(inj_array)[0])
     for j in range(np.shape(inj_array)[0]):
         energy = inj_array[j] * 1e-6 * 3.6
         hits = 0
-        for i in range (numb_inj):
+        for i in range(numb_inj):
             _, _, charge = calc_cluster_hits(
                 column_pitch,
                 column_numb,
-                column*column_pitch,
+                column * column_pitch,
                 0,
                 row_pitch,
                 row_numb,
-                row*row_pitch,
+                row * row_pitch,
                 0,
                 0,
                 0,
-                threshold,
+                threshold * 1e-3,
                 thickness,
-                energy)
+                energy,
+            )
             if charge > [0]:
                 hits += 1
         inj_hits[j] = hits / numb_inj
     return inj_hits
-            
+
+
 def create_hit_table(raw_hits_descr: np.dtype, numb_inj: int) -> np.array:
     """Create blank hit table
 
@@ -78,34 +89,45 @@ def create_hit_table(raw_hits_descr: np.dtype, numb_inj: int) -> np.array:
     """
     return np.zeros(numb_inj, dtype=raw_hits_descr)
 
+
 def plot_s_curve(inj_hits, inj_array, bins):
     fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-    ax.plot(inj_array, inj_hits)
-    ax.set_xlabel('Injected charge [e⁻]')
-    ax.set_ylabel('Hit probability')
+    ax.scatter(inj_array, inj_hits, s=2, color=lightblue)
+    ax.set_xlabel("Injected charge [e⁻]")
+    ax.set_ylabel("Hit probability")
     ax.grid()
     return fig
 
+
 def threshold_scan(dut, low, high, bins, inj_numb, name):
-    log.info(f'Threshold scan for {name}')
+    log.info(f"Threshold scan for {name}")
     inj_array = create_injection_array(low, high, bins)
-    hits = create_hits(inj_array, inj_numb, dut['column_pitch'], dut['row_pitch'], 
-                        dut['threshold'], dut['thickness'],
-                        dut['column'], dut['row'], column=0, row=0)
+    hits = create_hits(
+        inj_array,
+        inj_numb,
+        dut["column_pitch"],
+        dut["row_pitch"],
+        dut["threshold"],
+        dut["thickness"],
+        dut["column"],
+        dut["row"],
+        column=0,
+        row=0,
+    )
     s_curve = plot_s_curve(hits, inj_array, bins)
     pdf_pages = PdfPages("../output_data/threshold_scan.pdf")
     pdf_pages.savefig(s_curve)
     pdf_pages.close()
-    
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     log = logger.setup_main_logger("Threshold scan")
     low = 500
     high = 1500
-    bins = 1000
+    bins = 2000
     inj_numb = 100
     with open("../setup.yml", "r") as file:
         setup = yaml.full_load(file)
-    name = 'itkpix'
-    dut = setup['devices'][name]
+    name = "itkpix"
+    dut = setup["devices"][name]
     threshold_scan(dut, low, high, bins, inj_numb, name)
