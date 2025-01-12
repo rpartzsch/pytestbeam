@@ -1,5 +1,5 @@
 
-deviceses:
+devices:
     mimosa26_p1:
         column: 1152
         row: 576
@@ -9,6 +9,7 @@ deviceses:
         z_position: 0
         delta_x: 100
         delta_y: 0
+        threshold: 100
         trigger: untriggered
         material: silicon
 
@@ -21,6 +22,7 @@ deviceses:
         z_position: 30250
         delta_x: 0
         delta_y: 0
+        threshold: 100
         trigger: untriggered
         material: silicon
 
@@ -33,6 +35,7 @@ deviceses:
         z_position: 61800
         delta_x: 0
         delta_y: 0
+        threshold: 100
         trigger: untriggered
         material: silicon
 
@@ -45,6 +48,7 @@ deviceses:
         z_position: 202550
         delta_x: 100
         delta_y: 0
+        threshold: 100
         trigger: untriggered
         material: silicon
 
@@ -57,6 +61,7 @@ deviceses:
         z_position: 225000
         delta_x: 0
         delta_y: 0
+        threshold: 100
         trigger: untriggered
         material: silicon
 
@@ -69,6 +74,7 @@ deviceses:
         z_position: 250700
         delta_x: 0
         delta_y: 0
+        threshold: 100
         trigger: untriggered
         material: silicon
 
@@ -81,6 +87,7 @@ deviceses:
         z_position: 288150
         delta_x: 0
         delta_y: 0
+        threshold: 1000
         trigger: triggered
         material: silicon
 

@@ -3,6 +3,7 @@ import tables as tb
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from numba_progress import ProgressBar
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy import optimize
 import itertools
@@ -51,8 +52,6 @@ def plot_default(devices, names, hit_tables, event, folder, log):
         names[0],
         names[-1],
         log,
-        max_cols=(devices[0]["column"] + 1, devices[-1]["column"] + 1),
-        max_rows=(devices[0]["row"] + 1, devices[-1]["row"] + 1),
     )
     mean_energy = plot_mean_energy_distribution(
         devices, names, hit_tables, log, nevents
@@ -60,6 +59,8 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     angle_dispersion = plot_angle_dispersion(
         names, hit_tables, log, len(names), nevents, devices
     )
+    clusters = plot_cluster(device_2, log, names[-1])
+    charge_dist = plot_charge_dist(device_2, log, names[-1])
     time = plot_times_distribution(names, hit_tables, log, nevents)
     x_angles_last = plot_xangle_distribution(
         names, hit_tables, log, len(names), nevents
@@ -80,6 +81,8 @@ def plot_default(devices, names, hit_tables, event, folder, log):
     pdf_pages.savefig(corr)
     pdf_pages.savefig(mean_energy)
     pdf_pages.savefig(angle_dispersion)
+    pdf_pages.savefig(clusters)
+    pdf_pages.savefig(charge_dist)
     pdf_pages.savefig(time)
     pdf_pages.savefig(x_first)
     pdf_pages.savefig(y_first)
@@ -141,9 +144,9 @@ def plot_events(devices, names, hit_tables, event, log):
             i += 1
 
     # Set labels and title
-    ax.set_xlabel("x [$\mu$m]")
-    ax.set_ylabel("z [$\mu$m]")
-    ax.set_zlabel("y [$\mu$m]")
+    ax.set_xlabel(r"x [$\mu$m]")
+    ax.set_ylabel(r"z [$\mu$m]")
+    ax.set_zlabel(r"y [$\mu$m]")
     ax.set_title("Example event plot")
     ax.legend()
 
@@ -305,12 +308,13 @@ def plot_times_distribution(names, hit_tables, log, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$s\n$\sigma$ = %.6f $\mu$s"
-        % (popt[0], popt[1], popt[2]),
+        # label=f"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$s\n$\sigma$ = %.6f $\mu$s"
+        # % (popt[0], popt[1], popt[2]),
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} \n \u03C3 = {popt[2]: .6f}",
         color=lightgreen,
         linewidth=3,
     )
-    ax.set_xlabel("Time [$\mu$s]")
+    ax.set_xlabel(r"Time [$\mu$s]")
     ax.set_ylabel("#")
     ax.legend()
     ax.set_title("Time distribution")
@@ -343,8 +347,9 @@ def plot_xangle_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
-        % (popt[0], popt[1], popt[2]),
+        # label=f"Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
+        # % (popt[0], popt[1], popt[2]),
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} rad\n \u03C3 = {popt[2]: .6f} rad",
         color=lightgreen,
         linewidth=3,
     )
@@ -381,8 +386,9 @@ def plot_yangle_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
-        % (popt[0], popt[1], popt[2]),
+        # label=f"Gauss fit\n A= %.6f\n$\mu$ = %.6f rad\n$\sigma$ = %.6f rad"
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} rad\n \u03C3 = {popt[2]: .6f} rad",
+        # % (popt[0], popt[1], popt[2]),
         color=lightgreen,
         linewidth=3,
     )
@@ -419,12 +425,13 @@ def plot_x_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
-        % (popt[0], popt[1], popt[2]),
+        # label=f"Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
+        # % (popt[0], popt[1], popt[2]),
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} \n \u03C3 = {popt[2]: .6f}",
         color=lightgreen,
         linewidth=3,
     )
-    ax.set_xlabel("x [$\mu$m]")
+    ax.set_xlabel(r"x [$\mu$m]")
     ax.set_ylabel("#")
     ax.set_title("x distribution after %s" % names[i])
     ax.legend()
@@ -457,12 +464,13 @@ def plot_y_distribution(names, hit_tables, log, numb_device, events):
     ax.plot(
         x_interval_for_fit,
         gauss(x_interval_for_fit, *popt),
-        label="Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
-        % (popt[0], popt[1], popt[2]),
+        # label="Gauss fit\n A= %.6f\n$\mu$ = %.6f $\mu$m\n$\sigma$ = %.6f $\mu$m"
+        # % (popt[0], popt[1], popt[2]),
+        label=f"Gauss fit \n A = {popt[0]: .6f} \n \u03BC = {popt[1]: .6f} \n \u03C3 = {popt[2]: .6f}",
         color=lightgreen,
         linewidth=3,
     )
-    ax.set_xlabel("y [$\mu$m]")
+    ax.set_xlabel(r"y [$\mu$m]")
     ax.set_ylabel("#")
     ax.set_title("y distribution after %s" % names[i])
     ax.legend()
@@ -481,12 +489,13 @@ def plot_correlation(
     names_1,
     names_2,
     log,
-    max_cols=(512, 512),
-    max_rows=(512, 512),
+    max_cols=[None, None],
+    max_rows=[None, None],
     offset=0,
-    event_size=50000,
+    event_size=None,
     event_numb_shift=0,
 ):
+
     log.info("Plotting correlation")
 
     if event_size == None:
@@ -530,12 +539,37 @@ def plot_correlation(
         np.where(np.isin(device_y["event_number"], device_x["event_number"]) == False),
     )
 
-    x_corr_hist, y_corr_hist = (
-        np.zeros(max_cols, dtype=np.int32),
-        np.zeros(max_rows, dtype=np.int32),
+    device_x_columns = device_x["column"]
+    device_y_columns = device_y["column"]
+    device_x_rows = device_x["row"]
+    device_y_rows = device_y["row"]
+
+    if max_cols[0] == None:
+        max_cols[0] = np.max(device_x_columns) + 1
+        max_cols[1] = np.max(device_y_columns) + 1
+        max_rows[0] = np.max(device_x_rows) + 1
+        max_rows[1] = np.max(device_y_rows) + 1
+
+    x_corr_hist, y_corr_hist = np.zeros(max_cols, dtype=np.int32), np.zeros(
+        max_rows, dtype=np.int32
     )
 
-    buffer_x, buffer_y = _eventloop(device_x, device_y, x_corr_hist, y_corr_hist)
+    total_numb_events = np.max(device_x["event_number"]) - np.min(
+        device_x["event_number"]
+    )
+
+    with ProgressBar(total=total_numb_events) as progress:
+        buffer_x, buffer_y = _eventloop_fast(
+            device_x["event_number"],
+            device_x_rows,
+            device_x_columns,
+            device_y["event_number"],
+            device_y_rows,
+            device_y_columns,
+            x_corr_hist,
+            y_corr_hist,
+            progress,
+        )
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 12), constrained_layout=True)
     # fig.tight_layout()
@@ -554,6 +588,8 @@ def plot_correlation(
     ax[0].grid()
     ax[0].set_xlabel("Column %s" % names_2)
     ax[0].set_ylabel("Column %s" % names_1)
+    ax[0].set_xlim(np.min(device_y_columns) - 1)
+    ax[0].set_ylim(np.min(device_x_columns) - 1)
     # ax[0].colorbar(im_col, ax=ax[0])
     cbar = plt.colorbar(im_col, ax=ax[0], shrink=0.5)
     cbar.set_label("#")
@@ -570,9 +606,79 @@ def plot_correlation(
     ax[1].grid()
     ax[1].set_xlabel("Row %s" % names_2)
     ax[1].set_ylabel("Row %s" % names_1)
+    ax[1].set_xlim(np.min(device_y_rows) - 1)
+    ax[1].set_ylim(np.min(device_x_rows) - 1)
     cbar = plt.colorbar(im_row, ax=ax[1], shrink=0.5)
     cbar.set_label("#")
     fig.suptitle("Correlation first-last device, 50k events", fontsize=16)
+    return fig
+
+
+def plot_cluster(path_in_device, log, device_name="ITkPix"):
+
+    log.info("Plotting Clusters")
+    with tb.open_file(path_in_device, "r") as file:
+        table = file.root.Hits[:]
+        device = np.copy(table)
+
+    fig, ax = plt.subplots(3, 3, figsize=(12, 12), constrained_layout=True)
+
+    for i in range(3):
+        for j in range(3):
+            eventnumber = np.random.choice(
+                device[np.where(np.diff(device["event_number"]) == 0)]
+            )["event_number"]
+            event = device[np.where(device["event_number"] == eventnumber)]
+
+            x = np.arange(np.min(event["column"]), np.max(event["column"] + 1))
+            y = np.arange(np.min(event["row"]), np.max(event["row"] + 1))
+
+            cluster_hist = ax[i, j].hist2d(
+                event["column"],
+                event["row"],
+                bins=[len(x), len(y)],
+                weights=(event["charge"]),
+                cmap=colormap,
+            )
+
+            # ax[i, j].grid()
+            ax[i, j].set_xlabel("Column")
+            ax[i, j].set_ylabel("Row")
+            ax[i, j].set_xticks(x)
+            ax[i, j].set_yticks(y)
+            ax[i, j].set_title(f"Total charge {np.sum(event["charge"]): .0f} ke⁻")
+            cbar = plt.colorbar(cluster_hist[3], ax=ax[i, j])
+            cbar.set_label("Charge [ke⁻]")
+    fig.suptitle("Example Clusters %s" % device_name, fontsize=16)
+    return fig
+
+
+def plot_charge_dist(path_in_device, log, device_name="ITkPix"):
+
+    log.info("Plotting Charge Distribution of first 100000 events")
+    with tb.open_file(path_in_device, "r") as file:
+        table = file.root.Hits[:]
+        device = np.copy(table)
+
+    fig, ax = plt.subplots(1, 1, figsize=(12, 12), constrained_layout=True)
+
+    charge = _calc_charge_distr(
+        device["event_number"][:10000], device["charge"][:10000]
+    )
+
+    charge = charge[charge > 0]
+    charge = charge[charge < 0.1e3]
+
+    ax.hist(
+        charge,
+        bins=50,
+        color=blue,
+    )
+
+    ax.grid()
+    ax.set_xlabel("Charge [ke⁻]")
+    ax.set_ylabel("#")
+    ax.set_title(f"Collected Charge per Event in {device_name}")
     return fig
 
 
@@ -582,6 +688,14 @@ def centers_from_borders_numba(b):
     for idx in range(b.size - 1):
         centers[idx] = b[idx] + (b[idx + 1] - b[idx]) / 2
     return centers
+
+
+@njit
+def _calc_charge_distr(event_number, charges):
+    charge = np.zeros(np.max(event_number))
+    for i in range(np.max(event_number)):
+        charge[i] = np.sum(charges[np.where(event_number == i)])
+    return charge
 
 
 def _eventloop(device_1, device_2, x_hist, y_hist):
@@ -611,3 +725,40 @@ def _eventloop(device_1, device_2, x_hist, y_hist):
                 y_hist[comb_row[m][0], comb_row[m][1]] += 1
 
     return x_hist, y_hist
+
+
+@njit(nogil=True)
+def _eventloop_fast(
+    dev_1_ev,
+    dev_1_row,
+    dev_1_column,
+    dev_2_ev,
+    dev_2_row,
+    dev_2_column,
+    x_corr_hist,
+    y_corr_hist,
+    progress_proxy,
+):
+    index_1 = 0
+    index_2 = 0
+    j = 0
+    k = 0
+
+    for i in range(np.min(dev_1_ev), np.max(dev_1_ev)):
+        index_1 += j
+        index_2 += k
+        j = 0
+        while True:
+            k = 0
+            while True:
+                x_corr_hist[dev_1_column[j + index_1], dev_2_column[k + index_2]] += 1
+                y_corr_hist[dev_1_row[j + index_1], dev_2_row[k + index_2]] += 1
+                if dev_2_ev[k + index_2] > i:
+                    break
+                k += 1
+            if dev_1_ev[j + index_1] > i:
+                break
+            j += 1
+        progress_proxy.update(1)
+
+    return x_corr_hist, y_corr_hist
