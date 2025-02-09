@@ -413,7 +413,7 @@ def landau_approx(
     """Approximation of the Landau distribution from Behrens, S. E.; Melissinos, A.C. Univ. of Rochester Preprint UR-776 (1981)
 
     Args:
-        delta (list): List containing energy transvers
+        delta (list): List containing energy transverse
         x (float): Thickness of the scatter
         z (float): charge of the incoming particle
         Z (float): Atomic number of the scatterering material
