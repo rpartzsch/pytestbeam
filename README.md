@@ -1,5 +1,6 @@
 # pytestbeam
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Tests](https://github.com/rpartzsch/pytestbeam/actions/workflows/tests.yml/badge.svg)](https://github.com/rpartzsch/pytestbeam/actions/workflows/tests.yml)
+[![pre-commit](https://github.com/rpartzsch/pytestbeam/actions/workflows/pre_commit.yml/badge.svg)](https://github.com/rpartzsch/pytestbeam/actions/workflows/pre_commit.yml)
 
 Python based Monte Carlo simulation of a test beam setup. An EUDET-type beam telescope is implemented. The telescope consists of MIMOSA26 planes and an ITkPix as a time reference, but other devices can easily be added.
 [Numba](https://numba.pydata.org/) allows for performant calculations, drastically reducing compilation time. All physics cases are greatly simplified.
@@ -8,7 +9,7 @@ The particle beam consists of electrons with a given rate, beam profile, dispers
 
 The devices have rectangular pixels and a mostly uniform material budget, and they are placed in the center of the beam, though they can be shifted off-center. The clusters are calculated by sampling a Gaussian distribution around the particle intersection point, with a width taking diffusion and Coulomb expansion into account. Each device can be either triggered or untriggered; this only affects part of the hit data collection, as each beam particle has a given chance to be triggered.
 
-<img src="figures/setup_example_events.png" width="450"/>
+<img src="pytestbeam/figures/setup_example_events.png" width="450"/>
 
 # Installation
 

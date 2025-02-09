@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytestbeam"
+version = "0.10.0"
+license = { "text" = "AGPL-3.0" }
+description = "Python based Monte Carlo simulation of a test beam setup "
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Rasmus Partzsch", email="rasmus.partzsch@uni-bonn.de"},
+]
+dependencies = [
+    "numpy",
+    "coloredlogs",
+    "tables",
+    "tqdm",
+    "numba_progress",
+    "matplotlib",
+    "cmcrameri",
+    "pyyaml",
+    "scipy"
+]
+
+[project.urls]
+"Repository" = "https://github.com/rpartzsch/pytestbeam"
