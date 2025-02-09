@@ -1,21 +1,9 @@
-name: workflow
+name: pre-commit
 
 on:
   pull_request:
   push:
     branches: [master]
-
-jobs:
-  installation:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: |
-          pip install -e .
 
   pre-commit:
     runs-on: ubuntu-latest

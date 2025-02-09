@@ -1,5 +1,6 @@
 import numpy as np
 import yaml
+from pathlib import Path
 
 import main.hit as hit
 import main.device as device
@@ -9,16 +10,18 @@ import main.logger as logger
 if __name__ == "__main__":
     log = logger.setup_main_logger("pytestbeam")
 
+    FILEPATH = Path(__file__).parent
+
     log.info("Preparing simulation")
-    with open("setup.yml", "r") as file:
+    with open(FILEPATH / "setup.yml", "r") as file:
         setup = yaml.full_load(file)
 
-    with open("material.yml", "r") as file:
+    with open(FILEPATH / "material.yml", "r") as file:
         material = yaml.full_load(file)
 
     FOLDER = setup["data_output"]
     if FOLDER is None:
-        FOLDER = "output_data/"
+        FOLDER = str(FILEPATH / "output_data") + "/"
 
     device_material = [setup["devices"][dev]["material"] for dev in setup["devices"]]
     materials = [material[device_material[i]] for i in range(len(device_material))]

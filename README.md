@@ -8,7 +8,7 @@ The particle beam consists of electrons with a given rate, beam profile, dispers
 
 The devices have rectangular pixels and a mostly uniform material budget, and they are placed in the center of the beam, though they can be shifted off-center. The clusters are calculated by sampling a Gaussian distribution around the particle intersection point, with a width taking diffusion and Coulomb expansion into account. Each device can be either triggered or untriggered; this only affects part of the hit data collection, as each beam particle has a given chance to be triggered.
 
-<img src="figures/setup_example_events.png" width="450"/>
+<img src="pytestbeam/figures/setup_example_events.png" width="450"/>
 
 # Installation
 
