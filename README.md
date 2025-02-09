@@ -1,5 +1,6 @@
 # pytestbeam
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Tests](https://github.com/rpartzsch/pytestbeam/actions/workflows/tests.yml/badge.svg)](https://github.com/rpartzsch/pytestbeam/actions/workflows/tests.yml)
+[![pre-commit](https://github.com/rpartzsch/pytestbeam/actions/workflows/pre_commit.yml/badge.svg)](https://github.com/rpartzsch/pytestbeam/actions/workflows/pre_commit.yml)
 
 Python based Monte Carlo simulation of a test beam setup. An EUDET-type beam telescope is implemented. The telescope consists of MIMOSA26 planes and an ITkPix as a time reference, but other devices can easily be added.
 [Numba](https://numba.pydata.org/) allows for performant calculations, drastically reducing compilation time. All physics cases are greatly simplified.

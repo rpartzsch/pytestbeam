@@ -5,6 +5,7 @@ on:
   push:
     branches: [master]
 
+jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
